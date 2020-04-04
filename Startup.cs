@@ -29,9 +29,14 @@ namespace OwOConverter
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapGet("/", async context =>
+                {
+                    string resultString = @"Send a string in the url! Like ""/hello""";
+                    await context.Response.WriteAsync(resultString.ConvertToOwO());
+                });
                 endpoints.MapGet("/{text}", async context =>
                 {
-                    var resultString = "Send a string in the url!";
+                    var resultString = "If you see this your string was bad. Sorry!";
                     try
                     {
                         var inputString = context.GetRouteValue("text").ToString();
