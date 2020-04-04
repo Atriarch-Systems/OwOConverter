@@ -1,2 +1,2 @@
 # OwOConverter
-conevrts test to OwO
+converts text to OwO
