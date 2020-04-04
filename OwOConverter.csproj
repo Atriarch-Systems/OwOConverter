@@ -3,7 +3,8 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>helloworld_csharp</RootNamespace>
+    <RootNamespace>OwOConverter</RootNamespace>
+    <AssemblyName>OwOConverter</AssemblyName>
   </PropertyGroup>
 
 </Project>

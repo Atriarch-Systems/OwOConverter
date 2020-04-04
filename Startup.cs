@@ -2,10 +2,12 @@ using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OwOConverter.StringExtensions.OwOConverter;
 
-namespace helloworld_csharp
+namespace OwOConverter
 {
     public class Startup
     {
@@ -27,10 +29,20 @@ namespace helloworld_csharp
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("/", async context =>
+                endpoints.MapGet("/{text}", async context =>
                 {
-                    var target = Environment.GetEnvironmentVariable("TARGET") ?? "World";
-                    await context.Response.WriteAsync($"Hello {target}!\n");
+                    var resultString = "Send a string in the url!";
+                    try
+                    {
+                        var inputString = context.GetRouteValue("text").ToString();
+                        if (!string.IsNullOrWhiteSpace(inputString))
+                            resultString = inputString;
+                    }
+                    catch (Exception e) { }
+                    finally
+                    {
+                        await context.Response.WriteAsync(resultString.ConvertToOwO());
+                    }
                 });
             });
         }
