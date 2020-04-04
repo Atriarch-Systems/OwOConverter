@@ -25,7 +25,7 @@ node {
         }
     }
     stage('deploy'){        
-        def deployout = sh(returnStdout: true, script: "kubectl apply -f ${k8sDeployYamlPath} -n owoconverter")
+        def deployout = sh(returnStdout: true, script: "kubectl apply -f ${k8sDeployYamlPath}")
         //def updateout = sh(returnStdout: true, script: '''kubectl patch deployment fah-cpu -n Fun -p "{\\"spec\\":{\\"template\\":{\\"metadata\\":{\\"labels\\":{\\"date\\":\\"`date +'%s'`\\"}}}}}"''')
         println deployout        
     }                
