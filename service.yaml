@@ -1,14 +1,14 @@
 apiVersion: serving.knative.dev/v1 # Current version of Knative
 kind: Service
 metadata:
-  name: owo-converter-netcore # The name of the app
-  namespace: Fun # The namespace the app will use
+  name: owo-converter # The name of the app
+  namespace: owoconverter # The namespace the app will use
 spec:
   template:
     spec:
       containers:
         - name: owo-converter
-          image: atriarchsystems/owoconverternetcore # The URL to the image of the app
+          image: atriarchsystems/owo-converter:${IMAGE_VERSION} # The URL to the image of the app
           imagePullPolicy: Always
       imagePullSecrets:
       - name: as-regcred
