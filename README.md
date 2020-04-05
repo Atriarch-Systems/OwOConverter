@@ -6,4 +6,4 @@ Converts text to OwO</br>
 A url version of this wonderfull collection of regexes.
 [Firefox OwO Plugin](https://addons.mozilla.org/en-US/firefox/addon/owofox/)
 
-This was used as a PoC for deployment of KNative Serverless Apps in an on Prem Kubernetes Cluster.
+This was used as a PoC for deployment of [KNative](https://github.com/knative) Serverless Apps in an on Prem Kubernetes Cluster.
