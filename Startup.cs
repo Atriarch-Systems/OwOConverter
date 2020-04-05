@@ -1,4 +1,3 @@
-using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -31,7 +30,7 @@ namespace OwOConverter
             {
                 endpoints.MapGet("/", async context =>
                 {
-                    string resultString = @"Send a string in the url! Like ""/hello""";
+                    const string resultString = @"Send a string in the url! Like ""/hello""";
                     await context.Response.WriteAsync(resultString.ConvertToOwO());
                 });
                 endpoints.MapGet("/{text}", async context =>
@@ -43,7 +42,8 @@ namespace OwOConverter
                         if (!string.IsNullOrWhiteSpace(inputString))
                             resultString = inputString;
                     }
-                    catch (Exception e) { }
+                    catch
+                    { }
                     finally
                     {
                         await context.Response.WriteAsync(resultString.ConvertToOwO());
