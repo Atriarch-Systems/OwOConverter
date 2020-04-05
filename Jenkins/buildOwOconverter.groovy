@@ -12,7 +12,7 @@ node {
         imageVersion = "v1.0.${env.BUILD_NUMBER}"
     }
     stage('build'){
-       def buildout = sh(returnStdout: true, script: "docker build -t ${appName} -f ${dockerfilePathFromRoot} .")
+       def buildout = sh(returnStdout: true, script: "docker build -t ${appName} -f ${dockerfilePathFromRoot} ./src")
        println buildout
     }
     stage('push'){
@@ -27,7 +27,6 @@ node {
     }
     stage('deploy'){        
         def deployout = sh(returnStdout: true, script: " export IMAGE_VERSION=${imageVersion} && envsubst < ${k8sDeployYamlPath} | kubectl apply -f -")
-        //def updateout = sh(returnStdout: true, script: '''kubectl patch deployment fah-cpu -n Fun -p "{\\"spec\\":{\\"template\\":{\\"metadata\\":{\\"labels\\":{\\"date\\":\\"`date +'%s'`\\"}}}}}"''')
         println deployout        
     }                
 }
