@@ -7,7 +7,7 @@ namespace OwOConverter.StringExtensions.OwOConverter
     public static class OwOConverter
     {
         private static readonly Random RandomInt = new Random((int)DateTime.UtcNow.Ticks);
-        private static readonly List<string> Faces = new List<string> { ";w;", "owo", "UwU", ">w<", "^w^" };//"(・`ω´・)" doesn't encode right :C
+        private static readonly List<string> Faces = new List<string> { ";w;", "owo", "UwU", ">w<", "^w^", "*w*" };//"(・`ω´・)" doesn't encode right :C
         private static readonly MatchEvaluator FaceEvaluator = _ => " " + Faces[RandomInt.Next(Faces.Count)] + " ";
         public static string ConvertToOwO(this string input)
         {
