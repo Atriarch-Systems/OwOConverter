@@ -9,6 +9,5 @@ spec:
       containers:
         - name: owo-converter
           image: atriarchsystems/owo-converter:${IMAGE_VERSION} # The URL to the image of the app
-          imagePullPolicy: Always
       imagePullSecrets:
       - name: as-regcred
