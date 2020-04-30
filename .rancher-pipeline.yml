@@ -12,10 +12,3 @@ stages:
   - applyYamlConfig:
       path: ./service.yaml
 timeout: 10
-notification:
-  recipients:
-  - recipient: https://outlook.office.com/webhook/bdfe8eef-cc33-43ba-a868-60a3acfc4c1e@5bec8927-3925-4991-937e-cb0fc7d806a9/IncomingWebhook/55d513810654401db92bbbb7d79e1b2b/02c22d3d-23a7-4725-a39b-c879505c304c
-    notifier: c-xc9r9:n-pmwp6
-  condition:
-  - Success
-  - Failed
