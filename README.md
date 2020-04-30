@@ -1,5 +1,4 @@
 # OwO Converter</br>
-[![Build Status](http://jenkins.atriarch.systems/buildStatus/icon?job=Random%2FOwOConverter)](http://jenkins.atriarch.systems/job/Random/job/OwOConverter/)</br>
 Converts text to OwO</br>
 [Try it!](http://owo.drinkpoint.me)
 
