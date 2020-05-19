@@ -12,3 +12,4 @@ stages:
   - applyYamlConfig:
       path: ./service.yaml
 timeout: 10
+notification: {}
