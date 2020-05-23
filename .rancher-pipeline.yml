@@ -4,9 +4,8 @@ stages:
   - publishImageConfig:
       dockerfilePath: ./Dockerfile
       buildContext: ./src
-      tag: atriarchsystems/owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
-      pushRemote: true
-      registry: index.docker.io
+      tag: owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
+      registry: 127.0.0.1:34443
 - name: Deploy
   steps:
   - applyYamlConfig:
