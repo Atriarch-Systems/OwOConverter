@@ -5,7 +5,8 @@ stages:
       dockerfilePath: ./Dockerfile
       buildContext: ./src
       tag: owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
-      registry: docker-registry.fun.svc.cluster.local:34443
+      pushRemote: true
+      registry: index.docker.io
 - name: Deploy
   steps:
   - applyYamlConfig:
