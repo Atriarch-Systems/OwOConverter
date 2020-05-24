@@ -1,6 +1,6 @@
 # OwO Converter</br>
 Converts text to OwO</br>
-[Try it!](http://owo.drinkpoint.me)
+[Try it!](https://owo.drinkpoint.me)
 
 A url version of this wonderfull collection of regexes.
 [Firefox OwO Plugin](https://addons.mozilla.org/en-US/firefox/addon/owofox/)
