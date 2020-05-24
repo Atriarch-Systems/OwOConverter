@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: owo-converter # The name of the app
   namespace: owoconverter # The namespace the app will use
+  labels:
+    domain: drinkpoint
 spec:
   template:
     spec:
