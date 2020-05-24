@@ -5,7 +5,7 @@ stages:
       dockerfilePath: ./Dockerfile
       buildContext: ./src
       tag: owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
-      registry: 127.0.0.1:34443
+      registry: docker-registry.fun.svc.cluster.local:34443
 - name: Deploy
   steps:
   - applyYamlConfig:
