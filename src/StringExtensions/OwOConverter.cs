@@ -21,7 +21,7 @@ namespace OwOConverter.StringExtensions.OwOConverter
         private static string pattern = string.Join("|", Map.Keys);
         public static string ConvertToOwO(this string input)
         {
-            Regex.Replace(input, pattern, m => Map[m.Value], RegexOptions.Multiline,TimeSpan.FromSeconds(1));
+            input = Regex.Replace(input, pattern, m => Map[m.Value], RegexOptions.Multiline,TimeSpan.FromSeconds(1));
             input = Regex.Replace(input, @"\!+", FaceEvaluator);
             return input;
         }
