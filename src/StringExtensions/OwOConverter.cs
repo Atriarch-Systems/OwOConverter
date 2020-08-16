@@ -8,7 +8,7 @@ namespace OwOConverter.StringExtensions.OwOConverter
     {
         private static readonly Random RandomInt = new Random((int)DateTime.UtcNow.Ticks);
         private static readonly List<string> Faces = new List<string> { ";w;", "owo", "UwU", ">w<", "^w^", "*w*" };//"(`・ω・´)(・`ω´・)" doesn't encode right :C
-        private static readonly MatchEvaluator FaceEvaluator = _ => $" {Faces[RandomInt.Next(Faces.Count)]} ";
+        private static readonly MatchEvaluator FaceEvaluator = _ => " "+Faces[RandomInt.Next(Faces.Count)]+" ";
         private static readonly IDictionary<string, string> Map = new Dictionary<string, string>{
             {@"(r|l)", "w"},
             {@"(R|L)", "W"},
