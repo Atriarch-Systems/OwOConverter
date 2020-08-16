@@ -10,6 +10,6 @@ spec:
     spec:
       containers:
         - name: owo-converter
-          image: nexus.atriarch.systems/repository/atriarch-docker/owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE} # The URL to the image of the app
+          image: ${CICD_IMAGE}:v1.0.${CICD_EXECUTION_SEQUENCE} # The URL to the image of the app
       imagePullSecrets:
       - name: atriarch-systems-docker
