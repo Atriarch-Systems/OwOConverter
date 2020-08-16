@@ -4,7 +4,7 @@ stages:
   - publishImageConfig:
       dockerfilePath: ./Dockerfile
       buildContext: ./src
-      tag: nexus.atriarch.systems/repository/atriarch-docker/owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
+      tag: owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
       pushRemote: true
       registry: nexus.atriarch.systems/repository/atriarch-docker
 - name: Deploy
