@@ -2,7 +2,7 @@ apiVersion: serving.knative.dev/v1 # Current version of Knative
 kind: Service
 metadata:
   name: owo-converter # The name of the app
-  namespace: owoconverter # The namespace the app will use
+  namespace: owo-converter # The namespace the app will use
   labels:
     domain: drinkpoint
 spec:
