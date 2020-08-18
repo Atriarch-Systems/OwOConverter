@@ -6,15 +6,10 @@ stages:
       buildContext: ./src
       tag: owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
       pushRemote: true
-      registry: nexus.atriarch.systems/repository/atriarch-docker
+      registry: https://nexus.atriarch.systems/repository/atriarch-docker
 - name: Deploy
   steps:
   - applyYamlConfig:
       path: ./service.yaml
 timeout: 10
-notification:
-  recipients:
-  - recipient: dan@mail.atriarch.systems
-    notifier: c-xc9r9:n-g2gcc
-  condition:
-  - Failed
+notification: {}
