@@ -6,7 +6,7 @@ stages:
       buildContext: ./src
       tag: owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
       pushRemote: true
-      registry: https://nexus.atriarch.systems/repository/atriarch-docker
+      registry: nexus.atriarch.systems/repository/atriarch-docker
 - name: Deploy
   steps:
   - applyYamlConfig:
