@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OwOConverter.StringExtensions.OwOConverter;
+using OwOConverter.StringExtensions;
 
 namespace OwOConverter
 {

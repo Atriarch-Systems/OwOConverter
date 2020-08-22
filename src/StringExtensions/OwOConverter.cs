@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace OwOConverter.StringExtensions.OwOConverter
+namespace OwOConverter.StringExtensions
 {
     public static class OwOConverter
     {
