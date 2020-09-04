@@ -22,7 +22,7 @@ RUN dotnet publish "OwOConverter.csproj" -c Release -o out
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-alpine AS runtime
 WORKDIR /app
 COPY --from=build /app/out ./
-RUN adduser -h /home/appuser -s /bin/ash appuser
+RUN addgroup -g 1001 -S appuser && adduser -u 1001 -S appuser -G appuser
 USER appuser
 
 # Run the web service on container startup.
