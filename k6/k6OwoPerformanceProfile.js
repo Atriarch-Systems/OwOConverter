@@ -20,7 +20,7 @@ export default () => {
   }};
 
   let response = http.get(`${BASE_URL}/test string`, headerCollection);
-  check(response.body, { 'Check result is owo converted': (body) => body === 'test stwing' });
+  check(response.body, { 'is result owo converted': (body) => body === 'test stwing' });
 
   sleep(1);
 }

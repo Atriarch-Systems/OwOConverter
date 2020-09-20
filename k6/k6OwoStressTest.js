@@ -1,16 +1,16 @@
 import http from 'k6/http';
-import { sleep } from 'k6';
+import { sleep, check } from 'k6';
 
 export let options = {
   stages: [
-    { duration: '2m', target: 100 }, // below normal load
-    { duration: '5m', target: 100 },
-    { duration: '2m', target: 200 }, // normal load
-    { duration: '5m', target: 200 },
-    { duration: '2m', target: 300 }, // around the breaking point
-    { duration: '5m', target: 300 },
-    { duration: '2m', target: 400 }, // beyond the breaking point
-    { duration: '5m', target: 400 },
+    { duration: '2m', target: 500 }, // below normal load
+    { duration: '3m', target: 500 },
+    { duration: '2m', target: 1000 }, // normal load
+    { duration: '3m', target: 1000 },
+    { duration: '2m', target: 1500 }, // around the breaking point
+    { duration: '3m', target: 1500 },
+    { duration: '2m', target: 1900 }, // beyond the breaking point
+    { duration: '3m', target: 1900 },
     { duration: '3m', target: 0 }, // scale down. Recovery stage.
   ],
 };
@@ -26,6 +26,5 @@ export default function () {
   }};
 
   let response = http.get(`${BASE_URL}/${PAYLOAD}`, headerCollection);
-
-  sleep(1);
+  check(response.status, { 'is status 200': (code) => code === 200});
 }
