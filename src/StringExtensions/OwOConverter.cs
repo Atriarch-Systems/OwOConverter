@@ -17,7 +17,8 @@ namespace OwOConverter.StringExtensions
             input = Regex.Replace(input, "N([aeiou])", @"Ny$1", RegexOptions.Multiline);
             input = Regex.Replace(input, "N([AEIOU])", @"Ny$1", RegexOptions.Multiline);
             input = Regex.Replace(input, @"(ove)", "uv", RegexOptions.Multiline);
-            input = Regex.Replace(input, @"(ou)", "ew", RegexOptions.Multiline); input = Regex.Replace(input, @"\!+", FaceEvaluator);
+            input = Regex.Replace(input, @"(ou)", "ew", RegexOptions.Multiline);
+            input = Regex.Replace(input, @"\!+", FaceEvaluator);
             return input;
         }
     }
