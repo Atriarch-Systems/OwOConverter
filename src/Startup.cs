@@ -10,6 +10,7 @@ namespace OwOConverter
 {
     public class Startup
     {
+        // Hai James!
         public void ConfigureServices(IServiceCollection services)
         {
         }
