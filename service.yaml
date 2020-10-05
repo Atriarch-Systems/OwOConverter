@@ -17,5 +17,8 @@ spec:
           livenessProbe:
             httpGet:
               path: /
+          readinessProbe:
+            httpGet:
+              path: /
       imagePullSecrets:
       - name: atriarch-systems-docker-group
