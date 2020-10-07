@@ -7,6 +7,12 @@ A url version of this wonderfull collection of regexes.
 
 This was used as a PoC for deployment of [KNative](https://github.com/knative) Serverless Apps in an on Prem Kubernetes Cluster.
 
+### Example Use
+
+```bash
+$ git commit -m "$(curl --silent --fail https://owo.drinkpoint.me/My%20Commit%20Message\!)"
+```
+
 ### Load Test Behavior
 
 ![owo load test results](https://raw.githubusercontent.com/Demonslyr/OwOConverter/master/k6/StressResponse.PNG)
