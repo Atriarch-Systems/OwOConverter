@@ -1,5 +1,5 @@
 # OwO Converter</br>
-## Converts text to OwO</br>
+### Converts text to OwO</br>
 [Try it!](https://owo.drinkpoint.me)
 
 A url version of this wonderfull collection of regexes.
