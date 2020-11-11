@@ -11,13 +11,13 @@ namespace OwOConverter.StringExtensions
         private static readonly MatchEvaluator FaceEvaluator = _ => " "+Faces[RandomInt.Next(Faces.Count)]+" ";
         public static string ConvertToOwO(this string input)
         {
-            input = Regex.Replace(input, @"(r|l)", "w", RegexOptions.Multiline);
-            input = Regex.Replace(input, @"(R|L)", "W", RegexOptions.Multiline);
-            input = Regex.Replace(input, "n([aeiou])", @"ny$1", RegexOptions.Multiline);
-            input = Regex.Replace(input, "N([aeiou])", @"Ny$1", RegexOptions.Multiline);
-            input = Regex.Replace(input, "N([AEIOU])", @"Ny$1", RegexOptions.Multiline);
-            input = Regex.Replace(input, @"(ove)", "uv", RegexOptions.Multiline);
-            input = Regex.Replace(input, @"(ou)", "ew", RegexOptions.Multiline);
+            input = Regex.Replace(input, @"(r|l)", "w");
+            input = Regex.Replace(input, @"(R|L)", "W");
+            input = Regex.Replace(input, "n([aeiou])", @"ny$1");
+            input = Regex.Replace(input, "N([aeiou])", @"Ny$1");
+            input = Regex.Replace(input, "N([AEIOU])", @"Ny$1");
+            input = Regex.Replace(input, @"(ove)", "uv");
+            input = Regex.Replace(input, @"(ou)", "ew");
             input = Regex.Replace(input, @"\!+", FaceEvaluator);
             return input;
         }
