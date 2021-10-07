@@ -7,6 +7,9 @@ stages:
       tag: owo-converter:v1.0.${CICD_EXECUTION_SEQUENCE}
       pushRemote: true
       registry: docker.atriarch.systems
+    env:
+      PLUGIN_DEBUG: "true"
+      PLUGIN_INSECURE: "true"
 - name: Deploy
   steps:
   - applyYamlConfig:
