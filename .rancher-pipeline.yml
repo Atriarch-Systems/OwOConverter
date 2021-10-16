@@ -8,8 +8,7 @@ stages:
       pushRemote: true
       registry: docker.atriarch.systems
     env:
-      PLUGIN_DEBUG: "true"
-      PLUGIN_INSECURE: "true"
+      PLUGIN_MTU: "1400"
 - name: Deploy
   steps:
   - applyYamlConfig:
