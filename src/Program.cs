@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Hosting;
+using OwOConverter.StringExtensions;
 using System;
 using System.Threading.Tasks;
 
@@ -9,19 +13,50 @@ namespace OwOConverter
     {
         public static async Task Main(string[] args)
         {
-            await CreateHostBuilder(args).Build().RunAsync();
-        }
+            var builder = WebApplication.CreateBuilder(args);
 
-        public static IHostBuilder CreateHostBuilder(string[] args)
-        {
-            var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-            var url = string.Concat("http://0.0.0.0:", port);
+            var app = builder.Build();
 
-            return Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
+            if (builder.Environment.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+            app.Urls.Add(
+                string.Concat(
+                    "http://0.0.0.0:",
+                    Environment.GetEnvironmentVariable("PORT") ?? "8080"
+                    )
+                );
+
+            app.UseRouting();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapGet("/", async context =>
                 {
-                    webBuilder.UseStartup<Startup>().UseUrls(url);
+                    const string resultString = @"Send a string in the url! Like ""/hello""";
+                    await context.Response.WriteAsync(resultString.ConvertToOwO());
                 });
+                endpoints.MapGet("/{*text}", async context =>
+                {
+                    var resultString = "If you see this, your string was bad... Sorry!";
+                    try
+                    {
+                        var inputString = context.GetRouteValue("text").ToString();
+                        if (!string.IsNullOrWhiteSpace(inputString))
+                            resultString = inputString;
+                    }
+                    catch
+                    { }
+                    finally
+                    {
+                        await context.Response.WriteAsync(resultString.ConvertToOwO());
+                    }
+                });
+            });
+
+            await app.RunAsync();
         }
     }
 }
