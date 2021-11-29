@@ -32,7 +32,7 @@ namespace OwOConverter
                     const string resultString = @"Send a string in the url! Like ""/hello""";
                     await context.Response.WriteAsync(resultString.ConvertToOwO());
                 });
-                endpoints.MapGet("/{text}", async context =>
+                endpoints.MapGet("/{*text}", async context =>
                 {
                     var resultString = "If you see this your string was bad. Sorry!";
                     try
