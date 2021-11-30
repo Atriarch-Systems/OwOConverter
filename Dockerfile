@@ -14,12 +14,11 @@ COPY . ./
 WORKDIR /app
 
 # Build a release artifact.
-RUN dotnet publish "OwOConverter.csproj" -c Release -o out
+RUN dotnet publish "OwOConverter.csproj" -c Release -o out -r linux-x64 -p:PublishTrimmed=True
 
 
 # Use Microsoft's official runtime .NET image.
-# https://hub.docker.com/_/microsoft-dotnet-core-aspnet/
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine AS base
 WORKDIR /app
 COPY --from=build /app/out ./
 RUN addgroup -g 1001 -S appuser && adduser -u 1001 -S appuser -G appuser
