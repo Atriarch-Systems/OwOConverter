@@ -23,7 +23,7 @@ FROM amd64/alpine:3.14
 RUN apk add --no-cache libstdc++ libintl
 
 ENV \
-    # Configure web servers to bind to port 80 when present
+    # Configure web servers to bind to port 8080 when present
     ASPNETCORE_URLS=http://+:8080 \
     # Enable detection of running in a container
     DOTNET_RUNNING_IN_CONTAINER=true \
