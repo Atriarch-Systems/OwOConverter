@@ -24,7 +24,7 @@ RUN apk add --no-cache libstdc++ libintl
 
 ENV \
     # Configure web servers to bind to port 80 when present
-    ASPNETCORE_URLS=http://+:80 \
+    ASPNETCORE_URLS=http://+:8080 \
     # Enable detection of running in a container
     DOTNET_RUNNING_IN_CONTAINER=true \
     # Set the invariant mode since icu-libs isn't included (see https://github.com/dotnet/announcements/issues/20)
