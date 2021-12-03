@@ -21,13 +21,6 @@ namespace OwOConverter
                 app.UseDeveloperExceptionPage();
             }
 
-            app.Urls.Add(
-                string.Concat(
-                    "http://0.0.0.0:",
-                    Environment.GetEnvironmentVariable("PORT") ?? "8080"
-                    )
-                );
-
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>
