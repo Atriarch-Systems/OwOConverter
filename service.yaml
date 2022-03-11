@@ -12,8 +12,8 @@ spec:
         autoscaling.knative.dev/maxScale: "10"
     spec:
       containers:
-        - name: owo-converter
-          image: ${CICD_IMAGE}:v1.0.${CICD_EXECUTION_SEQUENCE} # The URL to the image of the app
+      - name: owo-converter
+        image: ${CICD_IMAGE}:v1.0.${CICD_EXECUTION_SEQUENCE} # The URL to the image of the app
         startupProbe:
           httpGet:
             path: /
