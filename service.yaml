@@ -30,7 +30,7 @@ spec:
           periodSeconds: 2
           successThreshold: 1
           failureThreshold: 2
-        livnessProbe:
+        livenessProbe:
           httpGet:
             path: /
             port: 80
