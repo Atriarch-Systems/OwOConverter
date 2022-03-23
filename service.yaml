@@ -14,21 +14,6 @@ spec:
       containers:
       - name: owo-converter
         image: ${CICD_IMAGE}:v1.0.${CICD_EXECUTION_SEQUENCE} # The URL to the image of the app
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          successThreshold: 1
-          failureThreshold: 2
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 8080
-          periodSeconds: 10
-          initialDelaySeconds: 5
-          failureThreshold: 1
         resources:
           requests:
             cpu: 100m
