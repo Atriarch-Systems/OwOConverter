@@ -17,6 +17,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /
+            port: 8080
           initialDelaySeconds: 1
           periodSeconds: 2
           successThreshold: 1
@@ -24,6 +25,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /
+            port: 8080
           periodSeconds: 10
           initialDelaySeconds: 5
           failureThreshold: 1
