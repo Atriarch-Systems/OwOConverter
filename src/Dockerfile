@@ -3,10 +3,8 @@
 # https://hub.docker.com/_/microsoft-dotnet-core-sdk/
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
 WORKDIR /
-COPY ["./src/UwUConverter.csproj", "./src"]
-COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
-RUN ls
-RUN ls ./src
+COPY ["./src/UwUConverter.csproj", "."]
+COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "."]
 RUN dotnet restore "./src/UwUConverter.csproj"
 RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
 COPY . .
