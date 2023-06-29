@@ -8,6 +8,8 @@ COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
 RUN dotnet restore "./src/UwUConverter.csproj"
 RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
 COPY . .
+RUN ls
+RUN ls./src
 RUN dotnet publish "./src/UwUConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
 
 # Use Microsoft's official runtime .NET image.
