@@ -2,13 +2,13 @@
 # Use Microsoft's official build .NET image.
 # https://hub.docker.com/_/microsoft-dotnet-core-sdk/
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
-COPY ["src/UwUConverter.csproj", "./src"]
-COPY ["UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
+WORKDIR /
+COPY ["./src/UwUConverter.csproj", "./src"]
+COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
 RUN dotnet restore "./src/UwUConverter.csproj"
 RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
 COPY . .
-WORKDIR "./src"
-RUN dotnet publish "UwUConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
+RUN dotnet publish "./src/UwUConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
 
 # Use Microsoft's official runtime .NET image.
 FROM amd64/alpine:3.14
@@ -24,7 +24,7 @@ ENV \
     # Set the invariant mode since icu-libs isn't included (see https://github.com/dotnet/announcements/issues/20)
     DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=build /out .
 RUN addgroup -g 1001 -S appuser && adduser -u 1001 -S appuser -G appuser
 USER appuser
 
