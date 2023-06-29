@@ -7,14 +7,14 @@ WORKDIR /app
 # Install production dependencies.
 # Copy csproj and restore as distinct layers.
 COPY *.csproj ./
-RUN dotnet restore "OwOConverter.csproj"
+RUN dotnet restore "UwUConverter.csproj"
 
 # Copy local code to the container image.
 COPY . ./
 WORKDIR /app
   
 # Build a release artifact.
-RUN dotnet publish "OwOConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
+RUN dotnet publish "UwUConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
 
 # Use Microsoft's official runtime .NET image.
 FROM amd64/alpine:3.14
@@ -35,4 +35,4 @@ RUN addgroup -g 1001 -S appuser && adduser -u 1001 -S appuser -G appuser
 USER appuser
 
 # Run the web service on container startup.
-ENTRYPOINT ["./OwOConverter"]
+ENTRYPOINT ["./UwUConverter"]
