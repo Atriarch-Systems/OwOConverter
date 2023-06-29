@@ -7,9 +7,9 @@ namespace UwUConverter.StartupHelpers
 {
     public static class StartupHelpers
     {
-        public static void ConfigureApp(WebApplication app, WebApplicationBuilder builder)
+        public static void ConfigureApp(WebApplication app)
         {
-            if (builder.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }

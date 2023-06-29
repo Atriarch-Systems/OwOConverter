@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc.Testing;
+using UwUConverter.StartupHelpers;
 using UwUConverter.StringExtensions;
 
 namespace UwUConverter.Tests
