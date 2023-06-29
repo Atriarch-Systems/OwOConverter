@@ -4,7 +4,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
 WORKDIR /src
 COPY ["src/UwUConverter.csproj", "."]
-COPY ["UwUConverter.Tests/UwUConverter.Tests.csproj", "."]
+COPY ["UwUConverter.Test/UwUConverter.Tests.csproj", "."]
 RUN dotnet restore "./UwUConverter.csproj"
 COPY . .
 #WORKDIR "/src/."
