@@ -5,6 +5,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
 WORKDIR /
 COPY ["./src/UwUConverter.csproj", "."]
 COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "."]
+RUN ls
 RUN dotnet restore "./src/UwUConverter.csproj"
 RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
 COPY . .
