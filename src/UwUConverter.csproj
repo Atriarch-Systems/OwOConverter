@@ -6,6 +6,13 @@
     <RootNamespace>UwUConverter</RootNamespace>
     <AssemblyName>UwUConverter</AssemblyName>
     <PreserveCompilationContext>true</PreserveCompilationContext>
+    <UserSecretsId>e0cb3b8b-d2fe-428e-90f2-830e2d8a0eac</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
+  </ItemGroup>
 
 </Project>
