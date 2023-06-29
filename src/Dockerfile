@@ -6,7 +6,7 @@ WORKDIR /
 COPY ["./src/UwUConverter.csproj", "./src"]
 COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
 RUN ls
-RUN ls./src
+RUN ls ./src
 RUN dotnet restore "./src/UwUConverter.csproj"
 RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
 COPY . .
