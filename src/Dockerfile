@@ -6,6 +6,7 @@ WORKDIR /src
 COPY ["src/UwUConverter.csproj", "."]
 COPY ["UwUConverter.Test/UwUConverter.Tests.csproj", "."]
 RUN dotnet restore "./UwUConverter.csproj"
+RUN dotnet restore "./UwUConverter.Tests.csproj"
 COPY . .
 #WORKDIR "/src/."
 RUN dotnet publish "UwUConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
