@@ -1,12 +1,5 @@
-using Xunit;
-using UwUConverter.StringExtensions;
-using Microsoft.AspNetCore.Hosting;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
-using OwOConverter.StartupHelpers;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
+using UwUConverter.StringExtensions;
 
 namespace UwUConverter.Tests
 {
@@ -21,16 +14,24 @@ namespace UwUConverter.Tests
         }
 
         [Fact]
-        public void TestUwUConversion()
+        public void TestUwUConversionWithNoFace()
         {
-            const string input = "Hello, world!";
-            const string expected = "Hewwo, wowwd!";
+            const string input = "Hello, world";
+            const string expected = "Hewwo, wowwd";
 
             var actual = input.ConvertToUwU();
 
             Assert.Equal(expected, actual);
         }
+        [Fact]
+        public void TestUwUFace()
+        {
+            const string input = "!";
 
+            var actual = input.ConvertToUwU();
+
+            Assert.True(StringExtensions.UwUConverter.Faces.Contains(actual.Trim()));
+        }
         [Fact]
         public async Task TestRootEndpoint()
         {
@@ -41,8 +42,11 @@ namespace UwUConverter.Tests
             var responseString = await response.Content.ReadAsStringAsync();
 
             // Assert
-            const string expected = @"Send a string in the url! Like ""/hello""";
-            Assert.Equal(expected.ConvertToUwU(), responseString);
+            const string expectedSubstringStart = @"Send a stwing in the uww ";
+            const string expectedSubstringEnd = @" Wike ""/hewwo""";
+            Assert.StartsWith(expectedSubstringStart, responseString);
+            Assert.EndsWith(expectedSubstringEnd, responseString);
+            Assert.True(StringExtensions.UwUConverter.Faces.Any(f => responseString.Contains(f)));
         }
 
         [Fact]

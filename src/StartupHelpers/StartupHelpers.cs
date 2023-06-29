@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using UwUConverter.StringExtensions;
 
-namespace OwOConverter.StartupHelpers
+namespace UwUConverter.StartupHelpers
 {
-    public class StartupHelpers
+    public static class StartupHelpers
     {
         public static void ConfigureApp(WebApplication app, WebApplicationBuilder builder)
         {
