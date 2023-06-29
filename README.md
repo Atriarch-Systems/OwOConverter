@@ -1,6 +1,6 @@
 # OwO Converter</br>
 ### Converts text to OwO</br>
-[Try it!](https://owo.drinkpoint.me)
+[Try it!](https://uwu.atriarch.systems)
 
 A url version of this wonderfull collection of regexes.
 [Firefox OwO Plugin](https://addons.mozilla.org/en-US/firefox/addon/owofox/)
@@ -10,7 +10,7 @@ This was used as a PoC for deployment of [KNative](https://github.com/knative) S
 ### Example Use
 
 ```bash
-$ git commit -m "$(curl --silent --fail https://owo.drinkpoint.me/My%20Commit%20Message\!)"
+$ git commit -m "$(curl --silent --fail https://uwu.atriarch.systems/My%20Commit%20Message\!)"
 ```
 
 ### Load Test Behavior
