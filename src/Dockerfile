@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install production dependencies.
 # Copy csproj and restore as distinct layers.
-COPY *.csproj ./
+COPY src/UwUConverter.csproj ./
 RUN dotnet restore "UwUConverter.csproj"
 
 # Copy local code to the container image.
