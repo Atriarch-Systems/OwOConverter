@@ -3,10 +3,10 @@
 # https://hub.docker.com/_/microsoft-dotnet-core-sdk/
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
 WORKDIR /src
-COPY ["UwUConverter.csproj", "."]
+COPY ["src/UwUConverter.csproj", "."]
 RUN dotnet restore "./UwUConverter.csproj"
 COPY . .
-WORKDIR "/src/."
+#WORKDIR "/src/."
 RUN dotnet publish "UwUConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
 
 # Use Microsoft's official runtime .NET image.

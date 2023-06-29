@@ -30,7 +30,7 @@ namespace UwUConverter.Tests
 
             var actual = input.ConvertToUwU();
 
-            Assert.True(StringExtensions.UwUConverter.Faces.Contains(actual.Trim()));
+            Assert.Contains(actual.Trim(), StringExtensions.UwUConverter.Faces);
         }
         [Fact]
         public async Task TestRootEndpoint()
@@ -46,7 +46,7 @@ namespace UwUConverter.Tests
             const string expectedSubstringEnd = @" Wike ""/hewwo""";
             Assert.StartsWith(expectedSubstringStart, responseString);
             Assert.EndsWith(expectedSubstringEnd, responseString);
-            Assert.True(StringExtensions.UwUConverter.Faces.Any(f => responseString.Contains(f)));
+            Assert.Contains(StringExtensions.UwUConverter.Faces, f => responseString.Contains(f));
         }
 
         [Fact]
