@@ -2,13 +2,12 @@
 # Use Microsoft's official build .NET image.
 # https://hub.docker.com/_/microsoft-dotnet-core-sdk/
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
-WORKDIR /src
-COPY ["src/UwUConverter.csproj", "."]
-COPY ["UwUConverter.Test/UwUConverter.Tests.csproj", "."]
-RUN dotnet restore "./UwUConverter.csproj"
-RUN dotnet restore "./UwUConverter.Tests.csproj"
+COPY ["src/UwUConverter.csproj", "./src"]
+COPY ["UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
+RUN dotnet restore "./src/UwUConverter.csproj"
+RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
 COPY . .
-#WORKDIR "/src/."
+WORKDIR "./src"
 RUN dotnet publish "UwUConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
 
 # Use Microsoft's official runtime .NET image.
