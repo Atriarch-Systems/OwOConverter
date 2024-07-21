@@ -11,12 +11,10 @@ export let options = {
 };
 
 const BASE_URL = 'http://HAProxyClusterLB.drinkpoint.me';
-//const USERNAME = 'TestUser';
-//const PASSWORD = 'SuperCroc2020';
 
 export default () => {
   let headerCollection = { headers: {
-    Host: `owo-converter.owo-converter.drinkpoint.me`
+    Host: `uwu-converter.uwu-converter.atriarch.systems`
   }};
 
   let response = http.get(`${BASE_URL}/test string`, headerCollection);
