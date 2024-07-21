@@ -22,7 +22,7 @@ const PAYLOAD = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praese
 export default function () {
 
   let headerCollection = { headers: {
-    Host: `owo-converter.owo-converter.drinkpoint.me`
+    Host: `uwu-converter.uwu-converter.atriarch.systems`
   }};
 
   let response = http.get(`${BASE_URL}/${PAYLOAD}`, headerCollection);
