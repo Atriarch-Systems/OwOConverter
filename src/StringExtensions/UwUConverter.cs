@@ -15,7 +15,7 @@ namespace UwUConverter.StringExtensions
             (new Regex(@"(R|L)", RegexOptions.Compiled), "W"),
             (new Regex("n([aeiou])", RegexOptions.Compiled), @"ny$1"),
             (new Regex("N([aeiou])", RegexOptions.Compiled), @"Ny$1"),
-            (new Regex("N([AEIOU])", RegexOptions.Compiled), @"Ny$1"),
+            (new Regex("N([AEIOU])", RegexOptions.Compiled), @"NY$1"),
             (new Regex(@"(ove)", RegexOptions.Compiled), "uv"),
             (new Regex(@"(ou)", RegexOptions.Compiled), "ew")
         };
