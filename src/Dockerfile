@@ -9,21 +9,41 @@ ARG NUGET_USER
 ARG NUGET_PASS
 
 WORKDIR /
+
+# Install curl and ca-certificates for debugging and SSL
+RUN apk add --no-cache curl ca-certificates
+
 COPY ["./src/UwUConverter.csproj", "./src/"]
 COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
 
-# Configure private NuGet feed as primary source
+# Configure NuGet sources with debugging
 RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PASS" ]; then \
         echo "Configuring private NuGet feed..." && \
+        echo "Testing connectivity to private feed..." && \
+        curl -I "$NUGET_FEED_URL" || echo "Private feed connectivity test failed" && \
+        echo "Configuring NuGet sources..." && \
         dotnet nuget remove source nuget.org || true && \
+        dotnet nuget add source https://api.nuget.org/v3/index.json --name "nuget.org" && \
         dotnet nuget add source "$NUGET_FEED_URL" --name "AtriarchNuGet" --username "$NUGET_USER" --password "$NUGET_PASS" --store-password-in-clear-text && \
-        dotnet nuget add source https://api.nuget.org/v3/index.json --name "nuget.org"; \
+        echo "Listing configured sources:" && \
+        dotnet nuget list source; \
     else \
-        echo "No private NuGet credentials provided, using public feed only"; \
+        echo "No private NuGet credentials provided, using public feed only" && \
+        dotnet nuget list source; \
     fi
 
-RUN dotnet restore "./src/UwUConverter.csproj" --verbosity normal
-RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity normal
+# Try restore with fallback strategy
+RUN echo "Attempting restore..." && \
+    (dotnet restore "./src/UwUConverter.csproj" --verbosity normal || \
+     (echo "Private feed failed, trying with only public feed..." && \
+      dotnet nuget remove source AtriarchNuGet || true && \
+      dotnet restore "./src/UwUConverter.csproj" --verbosity normal))
+
+RUN echo "Attempting test project restore..." && \
+    (dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity normal || \
+     (echo "Private feed failed, trying with only public feed..." && \
+      dotnet nuget remove source AtriarchNuGet || true && \
+      dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity normal))
 COPY . .
 
 # Build stage - this is where tests can be run
