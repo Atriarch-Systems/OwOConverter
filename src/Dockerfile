@@ -16,34 +16,32 @@ RUN apk add --no-cache curl ca-certificates
 COPY ["./src/UwUConverter.csproj", "./src/"]
 COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
 
-# Configure NuGet sources with debugging
+# Configure ONLY the private Nexus feed (which proxies public packages)
 RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PASS" ]; then \
-        echo "Configuring private NuGet feed..." && \
-        echo "Testing connectivity to private feed..." && \
-        curl -I "$NUGET_FEED_URL" || echo "Private feed connectivity test failed" && \
-        echo "Configuring NuGet sources..." && \
+        echo "Configuring private Nexus feed as the ONLY source (it proxies public packages)..." && \
+        echo "Testing authenticated connectivity to Nexus..." && \
+        curl -I -u "$NUGET_USER:$NUGET_PASS" "$NUGET_FEED_URL" && \
+        echo "Removing all default sources..." && \
         dotnet nuget remove source nuget.org || true && \
-        dotnet nuget add source https://api.nuget.org/v3/index.json --name "nuget.org" && \
-        dotnet nuget add source "$NUGET_FEED_URL" --name "AtriarchNuGet" --username "$NUGET_USER" --password "$NUGET_PASS" --store-password-in-clear-text && \
-        echo "Listing configured sources:" && \
+        echo "Adding ONLY the private Nexus feed..." && \
+        dotnet nuget add source "$NUGET_FEED_URL" --name "AtriarchNexus" --username "$NUGET_USER" --password "$NUGET_PASS" --store-password-in-clear-text && \
+        echo "Configured sources:" && \
         dotnet nuget list source; \
     else \
-        echo "No private NuGet credentials provided, using public feed only" && \
-        dotnet nuget list source; \
+        echo "ERROR: Private NuGet credentials are required!" && \
+        exit 1; \
     fi
 
-# Try restore with fallback strategy
-RUN echo "Attempting restore..." && \
-    (dotnet restore "./src/UwUConverter.csproj" --verbosity normal || \
-     (echo "Private feed failed, trying with only public feed..." && \
-      dotnet nuget remove source AtriarchNuGet || true && \
-      dotnet restore "./src/UwUConverter.csproj" --verbosity normal))
+# Configure NuGet settings for better timeout behavior
+RUN dotnet nuget configure --property http.timeout=300000 && \
+    dotnet nuget configure --property http.retries=3
 
-RUN echo "Attempting test project restore..." && \
-    (dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity normal || \
-     (echo "Private feed failed, trying with only public feed..." && \
-      dotnet nuget remove source AtriarchNuGet || true && \
-      dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity normal))
+# Restore using ONLY the private Nexus feed
+RUN echo "Restoring packages using private Nexus feed (proxying public packages)..." && \
+    dotnet restore "./src/UwUConverter.csproj" --verbosity normal --runtime alpine-x64
+
+RUN echo "Restoring test project packages..." && \
+    dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity normal --runtime alpine-x64
 COPY . .
 
 # Build stage - this is where tests can be run
