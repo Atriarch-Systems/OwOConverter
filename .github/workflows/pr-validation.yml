@@ -5,9 +5,12 @@ on:
     branches: [ master ]
 
 env:
-  # Repository-specific variables
-  IMAGE_NAME: uwuconverter
+  # Repository-specific variables (non-sensitive)
+  IMAGE_NAME: uwu-converter
   DOCKERFILE_PATH: ./src/Dockerfile
+  # Kubernetes secret names
+  K8S_SECRET_NAME: github-actions-secrets
+  K8S_SECRET_NAMESPACE: actions-runner-system
 
 jobs:
   test:
@@ -15,6 +18,29 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Load secrets from Kubernetes
+      run: |
+        # Extract secrets and immediately mask them
+        DOCKER_REGISTRY_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-registry}' | base64 -d)
+        DOCKER_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-username}' | base64 -d)
+        DOCKER_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-password}' | base64 -d)
+        NUGET_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-username}' | base64 -d)
+        NUGET_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-password}' | base64 -d)
+        
+        # Mask the values IMMEDIATELY
+        echo "::add-mask::$DOCKER_REGISTRY_VAL"
+        echo "::add-mask::$DOCKER_USERNAME_VAL"
+        echo "::add-mask::$DOCKER_PASSWORD_VAL"
+        echo "::add-mask::$NUGET_USERNAME_VAL"
+        echo "::add-mask::$NUGET_PASSWORD_VAL"
+        
+        # Set environment variables
+        echo "DOCKER_REGISTRY=$DOCKER_REGISTRY_VAL" >> $GITHUB_ENV
+        echo "DOCKER_USERNAME=$DOCKER_USERNAME_VAL" >> $GITHUB_ENV
+        echo "DOCKER_PASSWORD=$DOCKER_PASSWORD_VAL" >> $GITHUB_ENV
+        echo "NUGET_USERNAME=$NUGET_USERNAME_VAL" >> $GITHUB_ENV
+        echo "NUGET_PASSWORD=$NUGET_PASSWORD_VAL" >> $GITHUB_ENV
     
     - name: Set up Buildx for testing
       uses: docker/setup-buildx-action@v3
@@ -30,9 +56,9 @@ jobs:
     - name: Log in to Docker Registry (for private base images/packages)
       uses: docker/login-action@v3
       with:
-        registry: ${{ secrets.DOCKER_REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_PASSWORD }}
     
     - name: Build and run tests in container
       uses: docker/build-push-action@v5
@@ -43,8 +69,8 @@ jobs:
         platforms: linux/amd64
         push: false
         build-args: |
-          NUGET_USER=${{ secrets.NUGET_USERNAME }}
-          NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
+          NUGET_USER=${{ env.NUGET_USERNAME }}
+          NUGET_PASS=${{ env.NUGET_PASSWORD }}
         outputs: type=cacheonly
     
     - name: Run tests in built container
@@ -53,8 +79,8 @@ jobs:
         docker buildx build \
           --target build \
           --platform linux/amd64 \
-          --build-arg NUGET_USER=${{ secrets.NUGET_USERNAME }} \
-          --build-arg NUGET_PASS=${{ secrets.NUGET_PASSWORD }} \
+          --build-arg NUGET_USER=${{ env.NUGET_USERNAME }} \
+          --build-arg NUGET_PASS=${{ env.NUGET_PASSWORD }} \
           --load \
           --tag test-image \
           -f ${{ env.DOCKERFILE_PATH }} .
@@ -72,6 +98,29 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Load secrets from Kubernetes
+      run: |
+        # Extract secrets and immediately mask them
+        DOCKER_REGISTRY_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-registry}' | base64 -d)
+        DOCKER_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-username}' | base64 -d)
+        DOCKER_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-password}' | base64 -d)
+        NUGET_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-username}' | base64 -d)
+        NUGET_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-password}' | base64 -d)
+        
+        # Mask the values IMMEDIATELY
+        echo "::add-mask::$DOCKER_REGISTRY_VAL"
+        echo "::add-mask::$DOCKER_USERNAME_VAL"
+        echo "::add-mask::$DOCKER_PASSWORD_VAL"
+        echo "::add-mask::$NUGET_USERNAME_VAL"
+        echo "::add-mask::$NUGET_PASSWORD_VAL"
+        
+        # Set environment variables
+        echo "DOCKER_REGISTRY=$DOCKER_REGISTRY_VAL" >> $GITHUB_ENV
+        echo "DOCKER_USERNAME=$DOCKER_USERNAME_VAL" >> $GITHUB_ENV
+        echo "DOCKER_PASSWORD=$DOCKER_PASSWORD_VAL" >> $GITHUB_ENV
+        echo "NUGET_USERNAME=$NUGET_USERNAME_VAL" >> $GITHUB_ENV
+        echo "NUGET_PASSWORD=$NUGET_PASSWORD_VAL" >> $GITHUB_ENV
+    
     - name: Set up Buildx (k8s driver + qemu)
       uses: docker/setup-buildx-action@v3
       with:
@@ -86,15 +135,15 @@ jobs:
     - name: Log in to Docker Registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ secrets.DOCKER_REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_PASSWORD }}
     
     - name: Extract metadata for validation
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=pr
     
@@ -109,8 +158,8 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         build-args: |
-          NUGET_USER=${{ secrets.NUGET_USERNAME }}
-          NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
+          NUGET_USER=${{ env.NUGET_USERNAME }}
+          NUGET_PASS=${{ env.NUGET_PASSWORD }}
         outputs: type=cacheonly
     
     - name: PR Build Summary
