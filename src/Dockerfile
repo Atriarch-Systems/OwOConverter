@@ -25,6 +25,25 @@ RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PA
         dotnet nuget remove source nuget.org || true && \
         echo "Adding ONLY the private Nexus feed..." && \
         dotnet nuget add source "$NUGET_FEED_URL" --name "AtriarchNexus" --username "$NUGET_USER" --password "$NUGET_PASS" --store-password-in-clear-text && \
+        echo "Creating NuGet.config with timeout settings..." && \
+        echo '<?xml version="1.0" encoding="utf-8"?>' > /tmp/nuget.config && \
+        echo '<configuration>' >> /tmp/nuget.config && \
+        echo '  <config>' >> /tmp/nuget.config && \
+        echo '    <add key="http.timeout" value="300000" />' >> /tmp/nuget.config && \
+        echo '    <add key="http.retrycount" value="3" />' >> /tmp/nuget.config && \
+        echo '  </config>' >> /tmp/nuget.config && \
+        echo '  <packageSources>' >> /tmp/nuget.config && \
+        echo "    <add key=\"AtriarchNexus\" value=\"$NUGET_FEED_URL\" />" >> /tmp/nuget.config && \
+        echo '  </packageSources>' >> /tmp/nuget.config && \
+        echo '  <packageSourceCredentials>' >> /tmp/nuget.config && \
+        echo '    <AtriarchNexus>' >> /tmp/nuget.config && \
+        echo "      <add key=\"Username\" value=\"$NUGET_USER\" />" >> /tmp/nuget.config && \
+        echo "      <add key=\"ClearTextPassword\" value=\"$NUGET_PASS\" />" >> /tmp/nuget.config && \
+        echo '    </AtriarchNexus>' >> /tmp/nuget.config && \
+        echo '  </packageSourceCredentials>' >> /tmp/nuget.config && \
+        echo '</configuration>' >> /tmp/nuget.config && \
+        echo "NuGet.config created:" && \
+        cat /tmp/nuget.config && \
         echo "Configured sources:" && \
         dotnet nuget list source; \
     else \
@@ -32,16 +51,22 @@ RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PA
         exit 1; \
     fi
 
-# Configure NuGet settings for better timeout behavior
-RUN dotnet nuget configure --property http.timeout=300000 && \
-    dotnet nuget configure --property http.retries=3
-
-# Restore using ONLY the private Nexus feed
+# Restore using ONLY the private Nexus feed with timeout settings
 RUN echo "Restoring packages using private Nexus feed (proxying public packages)..." && \
-    dotnet restore "./src/UwUConverter.csproj" --verbosity normal --runtime alpine-x64
+    NUGET_HTTP_CACHE_PATH=/tmp/.nuget/v3-cache \
+    dotnet restore "./src/UwUConverter.csproj" \
+        --verbosity normal \
+        --runtime alpine-x64 \
+        --disable-parallel \
+        --configfile /tmp/nuget.config
 
 RUN echo "Restoring test project packages..." && \
-    dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity normal --runtime alpine-x64
+    NUGET_HTTP_CACHE_PATH=/tmp/.nuget/v3-cache \
+    dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" \
+        --verbosity normal \
+        --runtime alpine-x64 \
+        --disable-parallel \
+        --configfile /tmp/nuget.config
 COPY . .
 
 # Build stage - this is where tests can be run
