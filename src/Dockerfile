@@ -2,11 +2,28 @@
 # Use Microsoft's official build .NET image.
 # https://hub.docker.com/_/microsoft-dotnet-core-sdk/
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
+
+# Accept NuGet credentials as build arguments
+ARG NUGET_FEED_URL
+ARG NUGET_USER
+ARG NUGET_PASS
+
 WORKDIR /
 COPY ["./src/UwUConverter.csproj", "./src/"]
 COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
-RUN dotnet restore "./src/UwUConverter.csproj"
-RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
+
+# Configure private NuGet feed as primary source
+RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PASS" ]; then \
+        echo "Configuring private NuGet feed..." && \
+        dotnet nuget remove source nuget.org || true && \
+        dotnet nuget add source "$NUGET_FEED_URL" --name "AtriarchNuGet" --username "$NUGET_USER" --password "$NUGET_PASS" --store-password-in-clear-text && \
+        dotnet nuget add source https://api.nuget.org/v3/index.json --name "nuget.org"; \
+    else \
+        echo "No private NuGet credentials provided, using public feed only"; \
+    fi
+
+RUN dotnet restore "./src/UwUConverter.csproj" --verbosity normal
+RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity normal
 COPY . .
 
 # Build stage - this is where tests can be run
