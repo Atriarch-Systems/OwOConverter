@@ -1,0 +1,25 @@
+name: Runner Smoke Test
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ master ]
+
+jobs:
+  minimal:
+    name: Minimal label match
+    runs-on: [self-hosted, arc-pi]
+    steps:
+      - name: Say hi
+        run: |
+          echo "Hello from $RUNNER_NAME"
+          echo "OS/Arch: $RUNNER_OS/$RUNNER_ARCH"
+          uname -a
+
+  strict:
+    name: Strict label match
+    runs-on: [self-hosted, Linux, ARM64, arc-pi]
+    steps:
+      - name: Confirm strict match
+        run: |
+          echo "Strict labels matched on $RUNNER_NAME"
+          echo "OS/Arch: $RUNNER_OS/$RUNNER_ARCH"
