@@ -1,67 +1,41 @@
-name: Build and Deploy UwU Converter
+name: Build and Deploy
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 env:
-  # Repository-specific variables (non-sensitive)
-  IMAGE_NAME: uwu-converter
-  DOCKERFILE_PATH: ./src/Dockerfile
-  GITOPS_REPO: Demonslyr/atriarch-argo-state  # GitOps repository
-  GITOPS_BRANCH: production
-  DEPLOYMENT_YAML_PATH: uwu-converter/uwu-converter.yaml  # Path to deployment YAML
-  # Kubernetes secret names
-  K8S_SECRET_NAME: github-actions-secrets
-  K8S_SECRET_NAMESPACE: actions-runner-system
+  # Use GitHub variables and secrets
+  DOCKERFILE_PATH: ${{ vars.DOCKERFILE_PATH }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+  GITOPS_REPO: ${{ vars.GITOPS_REPO }}
+  GITOPS_BRANCH: ${{ vars.GITOPS_BRANCH }}
+  GITOPS_FILE_PATH: ${{ vars.GITOPS_FILE_PATH }}
 
 jobs:
   test:
-    runs-on: [self-hosted, arc-pi]  # Organization-level runners
+    runs-on: [self-hosted, arc-pi]
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Buildx for testing
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    
+    - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
-        driver: kubernetes
+        driver: docker-container
         driver-opts: |
-          namespace=actions-runner-system
-          serviceaccount=buildx
-          nodeselector=kubernetes.io/arch=arm64
-          qemu.install=true
+          image=moby/buildkit:buildx-stable-1
         install: true
     
-    - name: Load secrets from Kubernetes
-      run: |
-        # Extract secrets and immediately mask them before setting env vars
-        DOCKER_REGISTRY_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-registry}' | base64 -d)
-        DOCKER_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-username}' | base64 -d)
-        DOCKER_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-password}' | base64 -d)
-        NUGET_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-username}' | base64 -d)
-        NUGET_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-password}' | base64 -d)
-        
-        # Mask the values IMMEDIATELY before they can be logged
-        echo "::add-mask::$DOCKER_REGISTRY_VAL"
-        echo "::add-mask::$DOCKER_USERNAME_VAL"
-        echo "::add-mask::$DOCKER_PASSWORD_VAL"
-        echo "::add-mask::$NUGET_USERNAME_VAL"
-        echo "::add-mask::$NUGET_PASSWORD_VAL"
-        
-        # Now safely set environment variables
-        echo "DOCKER_REGISTRY=$DOCKER_REGISTRY_VAL" >> $GITHUB_ENV
-        echo "DOCKER_USERNAME=$DOCKER_USERNAME_VAL" >> $GITHUB_ENV
-        echo "DOCKER_PASSWORD=$DOCKER_PASSWORD_VAL" >> $GITHUB_ENV
-        echo "NUGET_USERNAME=$NUGET_USERNAME_VAL" >> $GITHUB_ENV
-        echo "NUGET_PASSWORD=$NUGET_PASSWORD_VAL" >> $GITHUB_ENV
-    
-    - name: Log in to Docker Registry (for private base images/packages)
+    - name: Log in to Docker Registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.DOCKER_REGISTRY }}
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
+        registry: ${{ secrets.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     
     - name: Build and run tests in container
       uses: docker/build-push-action@v5
@@ -71,136 +45,64 @@ jobs:
         target: build  # Stop at the build stage to run tests
         platforms: linux/amd64
         push: false
-        build-args: |
-          NUGET_USER=${{ env.NUGET_USERNAME }}
-          NUGET_PASS=${{ env.NUGET_PASSWORD }}
         outputs: type=cacheonly
     
     - name: Run tests in built container
       run: |
-        # Create a test container from the build stage
-        docker buildx build \
-          --target build \
-          --platform linux/amd64 \
-          --build-arg NUGET_USER=${{ env.NUGET_USERNAME }} \
-          --build-arg NUGET_PASS=${{ env.NUGET_PASSWORD }} \
-          --load \
-          --tag test-image \
-          -f ${{ env.DOCKERFILE_PATH }} .
-        
-        # Run tests in the container
         docker run --rm \
-          --workdir /src \
-          test-image \
-          dotnet test ../UwUConverter.Test/UwUConverter.Tests.csproj --logger "console;verbosity=detailed"
+          $(docker build -q --target build --platform linux/amd64 .) \
+          dotnet test "./UwUConverter.Test/UwUConverter.Tests.csproj" --no-restore --verbosity normal
 
   build-and-push:
     needs: test
-    runs-on: [self-hosted, arc-pi]  # Organization-level runners
-    
-    outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
-      image-digest: ${{ steps.build.outputs.digest }}
+    runs-on: [self-hosted, arc-pi]
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Load secrets from Kubernetes
-      run: |
-        # Extract secrets and immediately mask them
-        DOCKER_REGISTRY_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-registry}' | base64 -d)
-        DOCKER_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-username}' | base64 -d)
-        DOCKER_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-password}' | base64 -d)
-        NUGET_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-username}' | base64 -d)
-        NUGET_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-password}' | base64 -d)
-        
-        # Mask the values IMMEDIATELY
-        echo "::add-mask::$DOCKER_REGISTRY_VAL"
-        echo "::add-mask::$DOCKER_USERNAME_VAL"
-        echo "::add-mask::$DOCKER_PASSWORD_VAL"
-        echo "::add-mask::$NUGET_USERNAME_VAL"
-        echo "::add-mask::$NUGET_PASSWORD_VAL"
-        
-        # Set environment variables
-        echo "DOCKER_REGISTRY=$DOCKER_REGISTRY_VAL" >> $GITHUB_ENV
-        echo "DOCKER_USERNAME=$DOCKER_USERNAME_VAL" >> $GITHUB_ENV
-        echo "DOCKER_PASSWORD=$DOCKER_PASSWORD_VAL" >> $GITHUB_ENV
-        echo "NUGET_USERNAME=$NUGET_USERNAME_VAL" >> $GITHUB_ENV
-        echo "NUGET_PASSWORD=$NUGET_PASSWORD_VAL" >> $GITHUB_ENV
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
     
-    - name: Set up Buildx (k8s driver + qemu)
+    - name: Set up Docker Buildx  
       uses: docker/setup-buildx-action@v3
       with:
-        driver: kubernetes
+        driver: docker-container
         driver-opts: |
-          namespace=actions-runner-system
-          serviceaccount=buildx
-          nodeselector=kubernetes.io/arch=arm64
-          qemu.install=true
+          image=moby/buildkit:buildx-stable-1
         install: true
     
     - name: Log in to Docker Registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.DOCKER_REGISTRY }}
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
+        registry: ${{ secrets.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=raw,value=v1.0.${{ github.run_number }}
-          type=raw,value=latest,enable={{is_default_branch}}
-    
-    - name: Build and push Docker image
-      id: build
+    - name: Build and push to registry
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ${{ env.DOCKERFILE_PATH }}
         platforms: linux/amd64
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        build-args: |
-          NUGET_USER=${{ env.NUGET_USERNAME }}
-          NUGET_PASS=${{ env.NUGET_PASSWORD }}
+        tags: |
+          ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   update-gitops:
     needs: build-and-push
-    runs-on: [self-hosted, arc-pi]  # Organization-level runners
-    if: github.ref == 'refs/heads/master'
+    runs-on: [self-hosted, arc-pi]
     
     steps:
-    - name: Load secrets from Kubernetes
-      run: |
-        # Extract GitOps token and registry
-        GITOPS_TOKEN_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.gitops-token}' | base64 -d)
-        DOCKER_REGISTRY_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-registry}' | base64 -d)
-        
-        # Mask the values IMMEDIATELY
-        echo "::add-mask::$GITOPS_TOKEN_VAL"
-        echo "::add-mask::$DOCKER_REGISTRY_VAL"
-        
-        # Set environment variables
-        echo "GITOPS_TOKEN=$GITOPS_TOKEN_VAL" >> $GITHUB_ENV
-        echo "DOCKER_REGISTRY=$DOCKER_REGISTRY_VAL" >> $GITHUB_ENV
-    
-    - name: Checkout GitOps Repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         repository: ${{ env.GITOPS_REPO }}
         ref: ${{ env.GITOPS_BRANCH }}
-        token: ${{ env.GITOPS_TOKEN }}
-        path: gitops
+        token: ${{ secrets.GITOPS_TOKEN }}
+        path: gitops-repo
     
-    - name: Setup Python
-      uses: actions/setup-python@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
         python-version: '3.x'
     
@@ -209,48 +111,115 @@ jobs:
     
     - name: Update deployment YAML
       run: |
-        cat << 'EOF' > update_yaml.py
+        python3 << 'EOF'
         import yaml
-        import sys
         import os
         
-        deployment_path = os.path.join('gitops', '${{ env.DEPLOYMENT_YAML_PATH }}')
-        image_name = '${{ env.IMAGE_NAME }}'
-        new_image = '${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:v1.0.${{ github.run_number }}'
+        # Load the deployment YAML
+        yaml_path = f"gitops-repo/${{ env.GITOPS_FILE_PATH }}"
+        print(f"Updating {yaml_path}")
         
-        print(f'Updating {deployment_path} with image: {new_image}')
+        with open(yaml_path, 'r') as file:
+            deployment = yaml.safe_load(file)
         
-        documents = []
-        found_image = False
+        # Update the image tag
+        new_image = f"${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        print(f"New image: {new_image}")
         
-        with open(deployment_path, 'r') as file:
-            for doc in yaml.safe_load_all(file):
-                if doc and doc.get('kind') == 'Deployment' and doc.get('metadata', {}).get('name') == image_name:
-                    containers = doc.get('spec', {}).get('template', {}).get('spec', {}).get('containers', [])
-                    for container in containers:
-                        if 'image' in container:
-                            container['image'] = new_image
-                            found_image = True
-                            print(f'Updated container image to: {new_image}')
-                documents.append(doc)
+        # Navigate to the image field (adjust path as needed for your YAML structure)
+        if 'spec' in deployment and 'template' in deployment['spec']:
+            deployment['spec']['template']['spec']['containers'][0]['image'] = new_image
+        elif 'image' in deployment:
+            deployment['image'] = new_image
+        else:
+            print("Could not find image field in deployment YAML")
+            exit(1)
         
-        if not found_image:
-            print(f'Warning: No image found for deployment {image_name}')
-            sys.exit(1)
+        # Write back the updated YAML
+        with open(yaml_path, 'w') as file:
+            yaml.dump(deployment, file, default_flow_style=False)
         
-        with open(deployment_path, 'w') as file:
-            yaml.safe_dump_all(documents, file, explicit_start=True, default_flow_style=False)
-        
-        print('Successfully updated deployment YAML')
+        print("Successfully updated deployment YAML")
         EOF
-        
-        python update_yaml.py
     
     - name: Commit and push changes
       run: |
-        cd gitops
-        git config user.name "GitHub Actions Bot"
+        cd gitops-repo
+        git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
-        git add ${{ env.DEPLOYMENT_YAML_PATH }}
-        git commit -m "Update ${{ env.IMAGE_NAME }} to v1.0.${{ github.run_number }}"
+        git add ${{ env.GITOPS_FILE_PATH }}
+        git commit -m "Update ${{ env.IMAGE_NAME }} to ${{ github.sha }}"
         git push
+
+  notify-discord:
+    if: always()  # Run regardless of previous job status
+    needs: [test, build-and-push, update-gitops]
+    runs-on: [self-hosted, arc-pi]
+    
+    steps:
+    - name: Notify Discord on Success
+      if: needs.test.result == 'success' && needs.build-and-push.result == 'success' && needs.update-gitops.result == 'success'
+      run: |
+        curl -H "Content-Type: application/json" \
+             -d '{
+               "embeds": [{
+                 "title": "✅ UwU Converter Build Successful",
+                 "description": "Master branch build and deployment completed successfully!",
+                 "color": 3066993,
+                 "fields": [
+                   {
+                     "name": "Repository",
+                     "value": "${{ github.repository }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "Commit",
+                     "value": "`${{ github.sha }}`",
+                     "inline": true
+                   },
+                   {
+                     "name": "Image Tag",
+                     "value": "${{ secrets.DOCKER_REGISTRY }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}",
+                     "inline": false
+                   }
+                 ],
+                 "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"
+               }]
+             }' \
+             "${{ secrets.DISCORD_BUILD_NOTIFY_WEBHOOK }}"
+    
+    - name: Notify Discord on Failure
+      if: needs.test.result == 'failure' || needs.build-and-push.result == 'failure' || needs.update-gitops.result == 'failure'
+      run: |
+        curl -H "Content-Type: application/json" \
+             -d '{
+               "embeds": [{
+                 "title": "❌ UwU Converter Build Failed",
+                 "description": "Master branch build or deployment failed!",
+                 "color": 15158332,
+                 "fields": [
+                   {
+                     "name": "Repository",
+                     "value": "${{ github.repository }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "Commit",
+                     "value": "`${{ github.sha }}`",
+                     "inline": true
+                   },
+                   {
+                     "name": "Failed Jobs",
+                     "value": "Test: ${{ needs.test.result }}\nBuild: ${{ needs.build-and-push.result }}\nDeploy: ${{ needs.update-gitops.result }}",
+                     "inline": false
+                   },
+                   {
+                     "name": "Action URL",
+                     "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                     "inline": false
+                   }
+                 ],
+                 "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"
+               }]
+             }' \
+             "${{ secrets.DISCORD_BUILD_NOTIFY_WEBHOOK }}"

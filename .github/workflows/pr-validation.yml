@@ -2,63 +2,37 @@ name: PR Validation
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
-  # Repository-specific variables (non-sensitive)
-  IMAGE_NAME: uwu-converter
-  DOCKERFILE_PATH: ./src/Dockerfile
-  # Kubernetes secret names
-  K8S_SECRET_NAME: github-actions-secrets
-  K8S_SECRET_NAMESPACE: actions-runner-system
+  # Use GitHub variables and secrets
+  DOCKERFILE_PATH: ${{ vars.DOCKERFILE_PATH }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
 
 jobs:
   test:
-    runs-on: [self-hosted, Linux, ARM64, arc-pi]  # Organization-level runners
+    runs-on: [self-hosted, arc-pi]
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Load secrets from Kubernetes
-      run: |
-        # Extract secrets and immediately mask them
-        DOCKER_REGISTRY_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-registry}' | base64 -d)
-        DOCKER_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-username}' | base64 -d)
-        DOCKER_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-password}' | base64 -d)
-        NUGET_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-username}' | base64 -d)
-        NUGET_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-password}' | base64 -d)
-        
-        # Mask the values IMMEDIATELY
-        echo "::add-mask::$DOCKER_REGISTRY_VAL"
-        echo "::add-mask::$DOCKER_USERNAME_VAL"
-        echo "::add-mask::$DOCKER_PASSWORD_VAL"
-        echo "::add-mask::$NUGET_USERNAME_VAL"
-        echo "::add-mask::$NUGET_PASSWORD_VAL"
-        
-        # Set environment variables
-        echo "DOCKER_REGISTRY=$DOCKER_REGISTRY_VAL" >> $GITHUB_ENV
-        echo "DOCKER_USERNAME=$DOCKER_USERNAME_VAL" >> $GITHUB_ENV
-        echo "DOCKER_PASSWORD=$DOCKER_PASSWORD_VAL" >> $GITHUB_ENV
-        echo "NUGET_USERNAME=$NUGET_USERNAME_VAL" >> $GITHUB_ENV
-        echo "NUGET_PASSWORD=$NUGET_PASSWORD_VAL" >> $GITHUB_ENV
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
     
-    - name: Set up Buildx for testing
+    - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
-        driver: kubernetes
+        driver: docker-container
         driver-opts: |
-          namespace=actions-runner-system
-          serviceaccount=buildx
-          nodeselector=kubernetes.io/arch=arm64
-          qemu.install=true
+          image=moby/buildkit:buildx-stable-1
         install: true
     
-    - name: Log in to Docker Registry (for private base images/packages)
+    - name: Log in to Docker Registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.DOCKER_REGISTRY }}
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
+        registry: ${{ secrets.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     
     - name: Build and run tests in container
       uses: docker/build-push-action@v5
@@ -68,103 +42,133 @@ jobs:
         target: build  # Stop at the build stage to run tests
         platforms: linux/amd64
         push: false
-        build-args: |
-          NUGET_USER=${{ env.NUGET_USERNAME }}
-          NUGET_PASS=${{ env.NUGET_PASSWORD }}
         outputs: type=cacheonly
     
     - name: Run tests in built container
       run: |
-        # Create a test container from the build stage
-        docker buildx build \
-          --target build \
-          --platform linux/amd64 \
-          --build-arg NUGET_USER=${{ env.NUGET_USERNAME }} \
-          --build-arg NUGET_PASS=${{ env.NUGET_PASSWORD }} \
-          --load \
-          --tag test-image \
-          -f ${{ env.DOCKERFILE_PATH }} .
-        
-        # Run tests in the container
         docker run --rm \
-          --workdir /src \
-          test-image \
-          dotnet test ../UwUConverter.Test/UwUConverter.Tests.csproj --logger "console;verbosity=detailed"
+          $(docker build -q --target build --platform linux/amd64 .) \
+          dotnet test "./UwUConverter.Test/UwUConverter.Tests.csproj" --no-restore --verbosity normal
 
   build-validation:
     needs: test
-    runs-on: [self-hosted, Linux, ARM64, arc-pi]  # Organization-level runners
+    runs-on: [self-hosted, arc-pi]
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Load secrets from Kubernetes
-      run: |
-        # Extract secrets and immediately mask them
-        DOCKER_REGISTRY_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-registry}' | base64 -d)
-        DOCKER_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-username}' | base64 -d)
-        DOCKER_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.docker-password}' | base64 -d)
-        NUGET_USERNAME_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-username}' | base64 -d)
-        NUGET_PASSWORD_VAL=$(kubectl get secret ${{ env.K8S_SECRET_NAME }} -n ${{ env.K8S_SECRET_NAMESPACE }} -o jsonpath='{.data.nuget-password}' | base64 -d)
-        
-        # Mask the values IMMEDIATELY
-        echo "::add-mask::$DOCKER_REGISTRY_VAL"
-        echo "::add-mask::$DOCKER_USERNAME_VAL"
-        echo "::add-mask::$DOCKER_PASSWORD_VAL"
-        echo "::add-mask::$NUGET_USERNAME_VAL"
-        echo "::add-mask::$NUGET_PASSWORD_VAL"
-        
-        # Set environment variables
-        echo "DOCKER_REGISTRY=$DOCKER_REGISTRY_VAL" >> $GITHUB_ENV
-        echo "DOCKER_USERNAME=$DOCKER_USERNAME_VAL" >> $GITHUB_ENV
-        echo "DOCKER_PASSWORD=$DOCKER_PASSWORD_VAL" >> $GITHUB_ENV
-        echo "NUGET_USERNAME=$NUGET_USERNAME_VAL" >> $GITHUB_ENV
-        echo "NUGET_PASSWORD=$NUGET_PASSWORD_VAL" >> $GITHUB_ENV
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
     
-    - name: Set up Buildx (k8s driver + qemu)
+    - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
-        driver: kubernetes
+        driver: docker-container
         driver-opts: |
-          namespace=actions-runner-system
-          serviceaccount=buildx
-          nodeselector=kubernetes.io/arch=arm64
-          qemu.install=true
+          image=moby/buildkit:buildx-stable-1
         install: true
     
     - name: Log in to Docker Registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.DOCKER_REGISTRY }}
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
+        registry: ${{ secrets.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     
-    - name: Extract metadata for validation
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=pr
-    
-    - name: Build Docker image (validation only)
-      id: build
+    - name: Build (validation only - no push)
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ${{ env.DOCKERFILE_PATH }}
         platforms: linux/amd64
-        push: false  # Don't push for PRs
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        build-args: |
-          NUGET_USER=${{ env.NUGET_USERNAME }}
-          NUGET_PASS=${{ env.NUGET_PASSWORD }}
-        outputs: type=cacheonly
+        push: false
+        tags: |
+          ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }}
+
+  notify-discord:
+    if: always()  # Run regardless of previous job status
+    needs: [test, build-validation]
+    runs-on: [self-hosted, arc-pi]
     
-    - name: PR Build Summary
+    steps:
+    - name: Notify Discord on Success
+      if: needs.test.result == 'success' && needs.build-validation.result == 'success'
       run: |
-        echo "✅ Tests passed successfully"
-        echo "✅ Docker image builds successfully"
-        echo "📦 Image would be tagged as: ${{ steps.meta.outputs.tags }}"
-        echo "🚀 Ready for merge to master"
+        curl -H "Content-Type: application/json" \
+             -d '{
+               "embeds": [{
+                 "title": "✅ UwU Converter PR Validation Successful",
+                 "description": "Pull request validation completed successfully!",
+                 "color": 3066993,
+                 "fields": [
+                   {
+                     "name": "Repository",
+                     "value": "${{ github.repository }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "PR Number",
+                     "value": "#${{ github.event.number }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "PR Title",
+                     "value": "${{ github.event.pull_request.title }}",
+                     "inline": false
+                   },
+                   {
+                     "name": "Author",
+                     "value": "${{ github.event.pull_request.user.login }}",
+                     "inline": true
+                   }
+                 ],
+                 "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"
+               }]
+             }' \
+             "${{ secrets.DISCORD_BUILD_NOTIFY_WEBHOOK }}"
+    
+    - name: Notify Discord on Failure
+      if: needs.test.result == 'failure' || needs.build-validation.result == 'failure'
+      run: |
+        curl -H "Content-Type: application/json" \
+             -d '{
+               "embeds": [{
+                 "title": "❌ UwU Converter PR Validation Failed",
+                 "description": "Pull request validation failed!",
+                 "color": 15158332,
+                 "fields": [
+                   {
+                     "name": "Repository",
+                     "value": "${{ github.repository }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "PR Number",
+                     "value": "#${{ github.event.number }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "PR Title",
+                     "value": "${{ github.event.pull_request.title }}",
+                     "inline": false
+                   },
+                   {
+                     "name": "Author",
+                     "value": "${{ github.event.pull_request.user.login }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "Failed Jobs",
+                     "value": "Test: ${{ needs.test.result }}\nBuild: ${{ needs.build-validation.result }}",
+                     "inline": false
+                   },
+                   {
+                     "name": "Action URL",
+                     "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                     "inline": false
+                   }
+                 ],
+                 "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"
+               }]
+             }' \
+             "${{ secrets.DISCORD_BUILD_NOTIFY_WEBHOOK }}"
