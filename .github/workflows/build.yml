@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    runs-on: [self-hosted, Linux, ARM64, arc-pi]  # Organization-level runners
+    runs-on: [self-hosted, arc-pi]  # Organization-level runners
     
     steps:
     - uses: actions/checkout@v4
