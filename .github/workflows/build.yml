@@ -124,7 +124,7 @@ jobs:
 
   update-gitops:
     needs: build-and-push
-    runs-on: [self-hosted, Linux, ARM64, arc-pi]  # Organization-level runners
+    runs-on: [self-hosted, arc-pi]  # Organization-level runners
     if: github.ref == 'refs/heads/master'
     
     steps:
