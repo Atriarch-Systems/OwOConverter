@@ -10,10 +10,17 @@ RUN ls ./src
 RUN dotnet restore "./src/UwUConverter.csproj"
 RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
 COPY . .
+
+# Build stage - this is where tests can be run
+RUN dotnet build "./src/UwUConverter.csproj" -c Release --no-restore
+RUN dotnet build "./UwUConverter.Test/UwUConverter.Tests.csproj" -c Release --no-restore
+
+# Publish stage
+FROM build AS publish
 RUN dotnet publish "./src/UwUConverter.csproj" -c Release -o out -r alpine-x64 -p:PublishTrimmed=True /p:PublishSingleFile=true
 
 # Use Microsoft's official runtime .NET image.
-FROM amd64/alpine:3.14
+FROM amd64/alpine:3.14 AS final
 
 # Add some libs required by .NET runtime 
 RUN apk add --no-cache libstdc++ libintl
@@ -26,7 +33,7 @@ ENV \
     # Set the invariant mode since icu-libs isn't included (see https://github.com/dotnet/announcements/issues/20)
     DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true
 WORKDIR /app
-COPY --from=build /out .
+COPY --from=publish /out .
 RUN addgroup -g 1001 -S appuser && adduser -u 1001 -S appuser -G appuser
 USER appuser
 

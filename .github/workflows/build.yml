@@ -1,0 +1,193 @@
+name: Build and Deploy UwU Converter
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  # Repository-specific variables
+  IMAGE_NAME: uwuconverter
+  DOCKERFILE_PATH: ./src/Dockerfile
+  GITOPS_REPO: your-account/your-gitops-repo  # Update this to your actual GitOps repo (account/repo-name)
+  GITOPS_BRANCH: main
+  DEPLOYMENT_YAML_PATH: apps/uwuconverter/deployment.yaml  # Update this path
+
+jobs:
+  test:
+    runs-on: [self-hosted, linux]  # Adjust labels for your self-hosted runners
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Buildx for testing
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver: kubernetes
+        driver-opts: |
+          namespace=actions-runner-system
+          serviceaccount=buildx
+          nodeselector=kubernetes.io/arch=arm64
+          qemu.install=true
+        install: true
+    
+    - name: Log in to Docker Registry (for private base images/packages)
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build and run tests in container
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ${{ env.DOCKERFILE_PATH }}
+        target: build  # Stop at the build stage to run tests
+        platforms: linux/amd64
+        push: false
+        build-args: |
+          NUGET_USER=${{ secrets.NUGET_USERNAME }}
+          NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
+        outputs: type=cacheonly
+    
+    - name: Run tests in built container
+      run: |
+        # Create a test container from the build stage
+        docker buildx build \
+          --target build \
+          --platform linux/amd64 \
+          --build-arg NUGET_USER=${{ secrets.NUGET_USERNAME }} \
+          --build-arg NUGET_PASS=${{ secrets.NUGET_PASSWORD }} \
+          --load \
+          --tag test-image \
+          -f ${{ env.DOCKERFILE_PATH }} .
+        
+        # Run tests in the container
+        docker run --rm \
+          --workdir /src \
+          test-image \
+          dotnet test ../UwUConverter.Test/UwUConverter.Tests.csproj --logger "console;verbosity=detailed"
+
+  build-and-push:
+    needs: test
+    runs-on: [self-hosted, linux]  # Adjust labels for your self-hosted runners
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Buildx (k8s driver + qemu)
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver: kubernetes
+        driver-opts: |
+          namespace=actions-runner-system
+          serviceaccount=buildx
+          nodeselector=kubernetes.io/arch=arm64
+          qemu.install=true
+        install: true
+    
+    - name: Log in to Docker Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=raw,value=v1.0.${{ github.run_number }}
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ${{ env.DOCKERFILE_PATH }}
+        platforms: linux/amd64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          NUGET_USER=${{ secrets.NUGET_USERNAME }}
+          NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
+
+  update-gitops:
+    needs: build-and-push
+    runs-on: [self-hosted, linux]  # Adjust labels for your self-hosted runners
+    if: github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout GitOps Repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ env.GITOPS_REPO }}
+        ref: ${{ env.GITOPS_BRANCH }}
+        token: ${{ secrets.GITOPS_TOKEN }}
+        path: gitops
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    
+    - name: Install PyYAML
+      run: pip install PyYAML
+    
+    - name: Update deployment YAML
+      run: |
+        cat << 'EOF' > update_yaml.py
+        import yaml
+        import sys
+        import os
+        
+        deployment_path = os.path.join('gitops', '${{ env.DEPLOYMENT_YAML_PATH }}')
+        image_name = '${{ env.IMAGE_NAME }}'
+        new_image = '${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:v1.0.${{ github.run_number }}'
+        
+        print(f'Updating {deployment_path} with image: {new_image}')
+        
+        documents = []
+        found_image = False
+        
+        with open(deployment_path, 'r') as file:
+            for doc in yaml.safe_load_all(file):
+                if doc and doc.get('kind') == 'Deployment' and doc.get('metadata', {}).get('name') == image_name:
+                    containers = doc.get('spec', {}).get('template', {}).get('spec', {}).get('containers', [])
+                    for container in containers:
+                        if 'image' in container:
+                            container['image'] = new_image
+                            found_image = True
+                            print(f'Updated container image to: {new_image}')
+                documents.append(doc)
+        
+        if not found_image:
+            print(f'Warning: No image found for deployment {image_name}')
+            sys.exit(1)
+        
+        with open(deployment_path, 'w') as file:
+            yaml.safe_dump_all(documents, file, explicit_start=True, default_flow_style=False)
+        
+        print('Successfully updated deployment YAML')
+        EOF
+        
+        python update_yaml.py
+    
+    - name: Commit and push changes
+      run: |
+        cd gitops
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add ${{ env.DEPLOYMENT_YAML_PATH }}
+        git commit -m "Update ${{ env.IMAGE_NAME }} to v1.0.${{ github.run_number }}"
+        git push
