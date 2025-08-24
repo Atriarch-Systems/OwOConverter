@@ -83,8 +83,7 @@ jobs:
           NUGET_USER=${{ secrets.NUGET_USERNAME }}
           NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
         tags: |
-          ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:v1.0.${{ github.run_number }}
 
   update-gitops:
     needs: build-and-push
@@ -110,7 +109,7 @@ jobs:
         import yaml
         
         yaml_path = f"gitops-repo/${{ env.GITOPS_FILE_PATH }}"
-        new_image = f"${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        new_image = f"${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:v1.0.${{ github.run_number }}"
         
         with open(yaml_path, 'r') as file:
             deployment = yaml.safe_load(file)
@@ -136,7 +135,7 @@ jobs:
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add ${{ env.GITOPS_FILE_PATH }}
-        git commit -m "Update ${{ env.IMAGE_NAME }} to ${{ github.sha }}"
+        git commit -m "Update ${{ env.IMAGE_NAME }} to v1.0.${{ github.run_number }} (commit: ${{ github.sha }})"
         git push
 
   notify-discord:
@@ -167,7 +166,7 @@ jobs:
                    },
                    {
                      "name": "Image Tag",
-                     "value": "${{ secrets.DOCKER_REGISTRY }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}",
+                     "value": "${{ secrets.DOCKER_REGISTRY }}/${{ vars.IMAGE_NAME }}:v1.0.${{ github.run_number }}",
                      "inline": false
                    }
                  ],
