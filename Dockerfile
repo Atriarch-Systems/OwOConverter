@@ -29,6 +29,7 @@ RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PA
 COPY src/*.csproj ./src/
 COPY UwUConverter.Test/*.csproj ./UwUConverter.Test/
 RUN dotnet restore "./src/UwUConverter.csproj"
+RUN dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj"
 
 # Copy source code (maintain directory structure)
 COPY src/ ./src/
