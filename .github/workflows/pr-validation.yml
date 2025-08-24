@@ -23,18 +23,9 @@ jobs:
       uses: docker/setup-buildx-action@v3
       with:
         driver: docker-container
-        driver-opts: |
-          image=moby/buildkit:buildx-stable-1
         install: true
     
-    - name: Log in to Docker Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ secrets.DOCKER_REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    
-    - name: Build and run tests in container
+    - name: Build and test
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -46,12 +37,12 @@ jobs:
           NUGET_FEED_URL=${{ secrets.NUGET_FEED_URL }}
           NUGET_USER=${{ secrets.NUGET_USERNAME }}
           NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
-        outputs: type=cacheonly
+        load: true
+        tags: uwuconverter-test:latest
     
     - name: Run tests
       run: |
-        docker run --rm \
-          $(docker build -q --target build --platform linux/amd64 .) \
+        docker run --rm uwuconverter-test:latest \
           dotnet test "./UwUConverter.Test/UwUConverter.Tests.csproj" --no-restore --verbosity minimal
 
   build-validation:
@@ -68,16 +59,7 @@ jobs:
       uses: docker/setup-buildx-action@v3
       with:
         driver: docker-container
-        driver-opts: |
-          image=moby/buildkit:buildx-stable-1
         install: true
-    
-    - name: Log in to Docker Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ secrets.DOCKER_REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
     
     - name: Build (validation only - no push)
       uses: docker/build-push-action@v5
@@ -91,7 +73,7 @@ jobs:
           NUGET_USER=${{ secrets.NUGET_USERNAME }}
           NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
         tags: |
-          ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }}
+          ${{ vars.IMAGE_NAME }}:pr-${{ github.event.number }}
 
   notify-discord:
     if: always()  # Run regardless of previous job status
