@@ -27,10 +27,12 @@ RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PA
 
 # Copy project files and restore dependencies
 COPY src/*.csproj ./
+COPY UwUConverter.Test/*.csproj ./UwUConverter.Test/
 RUN dotnet restore "UwUConverter.csproj"
 
-# Copy source code and build
+# Copy source code and test code
 COPY src/ ./
+COPY UwUConverter.Test/ ./UwUConverter.Test/
 WORKDIR /app
 
 # Build a release artifact
