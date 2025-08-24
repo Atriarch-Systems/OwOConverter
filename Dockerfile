@@ -43,7 +43,7 @@ RUN dotnet publish "./src/UwUConverter.csproj" -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 COPY --from=build /app/out ./
-RUN addgroup -g 1001 -S appuser && adduser -u 1001 -S appuser -G appuser
+RUN groupadd -g 1001 appuser && useradd -u 1001 -g appuser -s /bin/bash -m appuser
 USER appuser
 
 # Run the web service on container startup.
