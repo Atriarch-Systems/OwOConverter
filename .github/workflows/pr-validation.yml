@@ -39,7 +39,7 @@ jobs:
       with:
         context: .
         file: ${{ env.DOCKERFILE_PATH }}
-        target: build  # Stop at the build stage to run tests
+        target: build
         platforms: linux/amd64
         push: false
         build-args: |
@@ -48,11 +48,11 @@ jobs:
           NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
         outputs: type=cacheonly
     
-    - name: Run tests in built container
+    - name: Run tests
       run: |
         docker run --rm \
           $(docker build -q --target build --platform linux/amd64 .) \
-          dotnet test "./UwUConverter.Test/UwUConverter.Tests.csproj" --no-restore --verbosity normal
+          dotnet test "./UwUConverter.Test/UwUConverter.Tests.csproj" --no-restore --verbosity minimal
 
   build-validation:
     needs: test

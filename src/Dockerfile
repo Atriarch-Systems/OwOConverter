@@ -10,63 +10,28 @@ ARG NUGET_PASS
 
 WORKDIR /
 
-# Install curl and ca-certificates for debugging and SSL
-RUN apk add --no-cache curl ca-certificates
+# Install curl for connectivity testing
+RUN apk add --no-cache curl
 
 COPY ["./src/UwUConverter.csproj", "./src/"]
 COPY ["./UwUConverter.Test/UwUConverter.Tests.csproj", "./UwUConverter.Test/"]
 
-# Configure ONLY the private Nexus feed (which proxies public packages)
+# Configure private Nexus feed
 RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PASS" ]; then \
-        echo "Configuring private Nexus feed as the ONLY source (it proxies public packages)..." && \
-        echo "Testing authenticated connectivity to Nexus..." && \
-        curl -I -u "$NUGET_USER:$NUGET_PASS" "$NUGET_FEED_URL" && \
-        echo "Removing all default sources..." && \
+        echo "Configuring private Nexus feed..." && \
         dotnet nuget remove source nuget.org || true && \
-        echo "Adding ONLY the private Nexus feed..." && \
-        dotnet nuget add source "$NUGET_FEED_URL" --name "AtriarchNexus" --username "$NUGET_USER" --password "$NUGET_PASS" --store-password-in-clear-text && \
-        echo "Creating NuGet.config with timeout settings..." && \
-        echo '<?xml version="1.0" encoding="utf-8"?>' > /tmp/nuget.config && \
-        echo '<configuration>' >> /tmp/nuget.config && \
-        echo '  <config>' >> /tmp/nuget.config && \
-        echo '    <add key="http.timeout" value="300000" />' >> /tmp/nuget.config && \
-        echo '    <add key="http.retrycount" value="3" />' >> /tmp/nuget.config && \
-        echo '  </config>' >> /tmp/nuget.config && \
-        echo '  <packageSources>' >> /tmp/nuget.config && \
-        echo "    <add key=\"AtriarchNexus\" value=\"$NUGET_FEED_URL\" />" >> /tmp/nuget.config && \
-        echo '  </packageSources>' >> /tmp/nuget.config && \
-        echo '  <packageSourceCredentials>' >> /tmp/nuget.config && \
-        echo '    <AtriarchNexus>' >> /tmp/nuget.config && \
-        echo "      <add key=\"Username\" value=\"$NUGET_USER\" />" >> /tmp/nuget.config && \
-        echo "      <add key=\"ClearTextPassword\" value=\"$NUGET_PASS\" />" >> /tmp/nuget.config && \
-        echo '    </AtriarchNexus>' >> /tmp/nuget.config && \
-        echo '  </packageSourceCredentials>' >> /tmp/nuget.config && \
-        echo '</configuration>' >> /tmp/nuget.config && \
-        echo "NuGet.config created:" && \
-        cat /tmp/nuget.config && \
-        echo "Configured sources:" && \
-        dotnet nuget list source; \
+        dotnet nuget add source "$NUGET_FEED_URL" --name "AtriarchNexus" --username "$NUGET_USER" --password "$NUGET_PASS" --store-password-in-clear-text; \
     else \
         echo "ERROR: Private NuGet credentials are required!" && \
         exit 1; \
     fi
 
-# Restore using ONLY the private Nexus feed with timeout settings
-RUN echo "Restoring packages using private Nexus feed (proxying public packages)..." && \
-    NUGET_HTTP_CACHE_PATH=/tmp/.nuget/v3-cache \
-    dotnet restore "./src/UwUConverter.csproj" \
-        --verbosity normal \
-        --runtime alpine-x64 \
-        --disable-parallel \
-        --configfile /tmp/nuget.config
+# Restore packages
+RUN echo "Restoring packages..." && \
+    dotnet restore "./src/UwUConverter.csproj" --verbosity minimal --runtime alpine-x64
 
-RUN echo "Restoring test project packages..." && \
-    NUGET_HTTP_CACHE_PATH=/tmp/.nuget/v3-cache \
-    dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" \
-        --verbosity normal \
-        --runtime alpine-x64 \
-        --disable-parallel \
-        --configfile /tmp/nuget.config
+RUN echo "Restoring test project..." && \
+    dotnet restore "./UwUConverter.Test/UwUConverter.Tests.csproj" --verbosity minimal --runtime alpine-x64
 COPY . .
 
 # Build stage - this is where tests can be run
