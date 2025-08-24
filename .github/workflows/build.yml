@@ -98,13 +98,11 @@ jobs:
         token: ${{ secrets.GITOPS_TOKEN }}
         path: gitops-repo
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
-    
     - name: Install PyYAML
-      run: pip install PyYAML
+      run: |
+        # Use system Python and install PyYAML
+        python3 --version
+        pip3 install --user PyYAML
     
     - name: Update deployment YAML
       run: |
