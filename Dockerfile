@@ -10,7 +10,19 @@ ARG NUGET_PASS
 
 # Configure NuGet for private feed if provided
 RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PASS" ]; then \
-        dotnet nuget add source "$NUGET_FEED_URL" --name "PrivateFeed" --username "$NUGET_USER" --password "$NUGET_PASS" --store-password-in-clear-text; \
+        echo '<?xml version="1.0" encoding="utf-8"?>' > nuget.config && \
+        echo '<configuration>' >> nuget.config && \
+        echo '  <packageSources>' >> nuget.config && \
+        echo '    <clear />' >> nuget.config && \
+        echo "    <add key=\"PrivateFeed\" value=\"$NUGET_FEED_URL\" />" >> nuget.config && \
+        echo '  </packageSources>' >> nuget.config && \
+        echo '  <packageSourceCredentials>' >> nuget.config && \
+        echo '    <PrivateFeed>' >> nuget.config && \
+        echo "      <add key=\"Username\" value=\"$NUGET_USER\" />" >> nuget.config && \
+        echo "      <add key=\"ClearTextPassword\" value=\"$NUGET_PASS\" />" >> nuget.config && \
+        echo '    </PrivateFeed>' >> nuget.config && \
+        echo '  </packageSourceCredentials>' >> nuget.config && \
+        echo '</configuration>' >> nuget.config; \
     fi
 
 # Copy project files and restore dependencies
