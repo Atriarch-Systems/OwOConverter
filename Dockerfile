@@ -26,17 +26,16 @@ RUN if [ ! -z "$NUGET_FEED_URL" ] && [ ! -z "$NUGET_USER" ] && [ ! -z "$NUGET_PA
     fi
 
 # Copy project files and restore dependencies
-COPY src/*.csproj ./
+COPY src/*.csproj ./src/
 COPY UwUConverter.Test/*.csproj ./UwUConverter.Test/
-RUN dotnet restore "UwUConverter.csproj"
+RUN dotnet restore "./src/UwUConverter.csproj"
 
-# Copy source code and test code
-COPY src/ ./
+# Copy source code (maintain directory structure)
+COPY src/ ./src/
 COPY UwUConverter.Test/ ./UwUConverter.Test/
-WORKDIR /app
 
-# Build a release artifact
-RUN dotnet publish "UwUConverter.csproj" -c Release -o out
+# Build a release artifact from the src directory
+RUN dotnet publish "./src/UwUConverter.csproj" -c Release -o out
 
 # Use Microsoft's official runtime .NET image.
 # https://hub.docker.com/_/microsoft-dotnet-aspnet/
