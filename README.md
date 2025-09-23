@@ -11,7 +11,7 @@ This was used as a PoC for deployment of [KNative](https://github.com/knative) S
 
 ### Example Use
 
-```bash
+```bash 
 $ git commit -m "$(curl --silent --fail https://uwu.atriarch.systems/My%20Commit%20Message\!)"
 ```
 
