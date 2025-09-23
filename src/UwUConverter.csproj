@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>UwUConverter</RootNamespace>
     <AssemblyName>UwUConverter</AssemblyName>
     <PreserveCompilationContext>true</PreserveCompilationContext>

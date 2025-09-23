@@ -1,6 +1,6 @@
 # Use Microsoft's official build .NET image.
 # https://hub.docker.com/_/microsoft-dotnet-sdk/
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
 # Build arguments for private NuGet feed
@@ -40,7 +40,7 @@ RUN dotnet publish "./src/UwUConverter.csproj" -c Release -o out
 
 # Use Microsoft's official runtime .NET image.
 # https://hub.docker.com/_/microsoft-dotnet-aspnet/
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 COPY --from=build /app/out ./
 RUN groupadd -g 1001 appuser && useradd -u 1001 -g appuser -s /bin/bash -m appuser
