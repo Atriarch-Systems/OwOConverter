@@ -1,7 +1,7 @@
-# OwO Converter</br>
+# UwU Converter</br>
 [![Build and Deploy UwU Converter](https://github.com/Atriarch-Systems/OwOConverter/actions/workflows/build.yml/badge.svg)](https://github.com/Atriarch-Systems/OwOConverter/actions/workflows/build.yml)
 
-### Converts text to OwO</br>
+### Converts text to UwU</br>
 [Try it!](https://uwu.atriarch.systems)
 
 A url version of this wonderfull collection of regexes.
@@ -55,4 +55,4 @@ default ✓ [======================================] 0000/1900 VUs  23m0s.
     vus_max....................: 1900    min=1900 max=1900
 ```
 
-![owo load test results](https://raw.githubusercontent.com/Demonslyr/OwOConverter/master/k6/StressResponse.PNG)
+![uwu load test results](https://raw.githubusercontent.com/Demonslyr/OwOConverter/master/k6/StressResponse.PNG)
