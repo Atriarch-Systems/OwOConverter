@@ -45,6 +45,8 @@ WORKDIR /app
 COPY --from=build /app/out ./
 RUN groupadd -g 1001 appuser && useradd -u 1001 -g appuser -s /bin/bash -m appuser
 USER appuser
+EXPOSE 8080
+ENV ASPNETCORE_HTTP_PORTS=8080
 
 # Run the web service on container startup.
 ENTRYPOINT ["dotnet", "UwUConverter.dll"]
