@@ -1,5 +1,8 @@
 name: Build and Deploy
 
+# Adopts the shared Atriarch-Systems/Atriarch.Actions container-ci reusable
+# workflow. Edited in place (same path/name) so the published v1.0.<run_number>
+# tag sequence keeps counting from where it left off instead of resetting.
 on:
   push:
     branches: [master]
@@ -13,3 +16,93 @@ jobs:
     with:
       image_name: uwu-converter
       gitops_file: uwu-converter/uwu-converter.yaml
+      runs_on: '["self-hosted","Linux","ARM64","arc-pi"]'
+      # The "build" stage is the SDK stage that has the test project restored
+      # and compiled; running `dotnet test` inside it IS the test step, same
+      # as the old workflow's separate `test` job.
+      test_target: build
+      test_command: 'dotnet test "./UwUConverter.Test/UwUConverter.Tests.csproj" --no-restore --verbosity minimal'
+      nuget_build_args: true
+      build_args: |
+        NUGET_FEED_URL=${{ secrets.NUGET_FEED_URL }}
+      # The old workflow never pushed a `:latest` tag, only the versioned one.
+      # Keep that behavior instead of picking up the shared default.
+      tag_latest: false
+
+  notify-discord:
+    if: always()
+    needs: [ci]
+    runs-on: [self-hosted, arc-pi]
+
+    steps:
+    - name: Notify Discord on Success
+      if: needs.ci.result == 'success'
+      run: |
+        curl -H "Content-Type: application/json" \
+             -d '{
+               "embeds": [{
+                 "title": "✅ UwU Converter CI Successful",
+                 "description": "CI for `${{ github.event_name }}` on `${{ github.ref_name }}` completed successfully!",
+                 "color": 3066993,
+                 "fields": [
+                   {
+                     "name": "Repository",
+                     "value": "${{ github.repository }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "Commit",
+                     "value": "`${{ github.sha }}`",
+                     "inline": true
+                   },
+                   {
+                     "name": "Event",
+                     "value": "${{ github.event_name }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "Image Tag",
+                     "value": "${{ needs.ci.outputs.version_tag }}",
+                     "inline": false
+                   }
+                 ],
+                 "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"
+               }]
+             }' \
+             "${{ secrets.DISCORD_BUILD_NOTIFY_WEBHOOK }}"
+
+    - name: Notify Discord on Failure
+      if: needs.ci.result == 'failure'
+      run: |
+        curl -H "Content-Type: application/json" \
+             -d '{
+               "embeds": [{
+                 "title": "❌ UwU Converter CI Failed",
+                 "description": "CI for `${{ github.event_name }}` on `${{ github.ref_name }}` failed!",
+                 "color": 15158332,
+                 "fields": [
+                   {
+                     "name": "Repository",
+                     "value": "${{ github.repository }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "Commit",
+                     "value": "`${{ github.sha }}`",
+                     "inline": true
+                   },
+                   {
+                     "name": "Event",
+                     "value": "${{ github.event_name }}",
+                     "inline": true
+                   },
+                   {
+                     "name": "Action URL",
+                     "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                     "inline": false
+                   }
+                 ],
+                 "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"
+               }]
+             }' \
+             "${{ secrets.DISCORD_BUILD_NOTIFY_WEBHOOK }}"
