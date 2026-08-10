@@ -1,5 +1,8 @@
 name: Build and Deploy
 
+# Adopts the shared Atriarch-Systems/Atriarch.Actions container-ci reusable
+# workflow. Edited in place (same path/name) so the published v1.0.<run_number>
+# tag sequence keeps counting from where it left off instead of resetting.
 on:
   push:
     branches: [master]
