@@ -97,11 +97,17 @@ jobs:
         token: ${{ secrets.GITOPS_TOKEN }}
         path: gitops-repo
     
+    # arc-amd64 runner images ship without Python/pip (the arc-pi image had them).
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
     - name: Install PyYAML
       run: |
         # Use system Python and install PyYAML
         python3 --version
-        pip3 install --user PyYAML
+        python3 -m pip install PyYAML
     
     - name: Update deployment YAML
       run: |
