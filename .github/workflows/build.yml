@@ -1,157 +1,48 @@
 name: Build and Deploy
 
+# Adopts the shared Atriarch-Systems/Atriarch.Actions container-ci reusable
+# workflow. Edited in place (same path/name) so the published v1.0.<run_number>
+# tag sequence keeps counting from where it left off instead of resetting.
 on:
   push:
     branches: [master]
-
-env:
-  # Use GitHub variables and secrets
-  DOCKERFILE_PATH: ${{ vars.DOCKERFILE_PATH }}
-  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
-  GITOPS_REPO: ${{ vars.GITOPS_REPO }}
-  GITOPS_BRANCH: ${{ vars.GITOPS_BRANCH }}
-  GITOPS_FILE_PATH: ${{ vars.GITOPS_FILE_PATH }}
+  pull_request:
+    branches: [master]
 
 jobs:
-  test:
-    runs-on: [self-hosted, arc-pi]
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      with:
-        driver: docker-container
-        install: true
-    
-    - name: Build and test
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ${{ env.DOCKERFILE_PATH }}
-        target: build
-        platforms: linux/amd64
-        push: false
-        build-args: |
-          NUGET_FEED_URL=${{ secrets.NUGET_FEED_URL }}
-          NUGET_USER=${{ secrets.NUGET_USERNAME }}
-          NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
-        load: true
-        tags: uwuconverter-test:latest
-    
-    - name: Run tests
-      run: |
-        docker run --rm uwuconverter-test:latest \
-          dotnet test "./UwUConverter.Test/UwUConverter.Tests.csproj" --no-restore --verbosity minimal
-
-  build-and-push:
-    needs: test
-    runs-on: [self-hosted, arc-pi]
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-    
-    - name: Set up Docker Buildx  
-      uses: docker/setup-buildx-action@v3
-      with:
-        driver: docker-container
-        install: true
-    
-    - name: Log in to Docker Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ secrets.DOCKER_REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    
-    - name: Build and push to registry
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ${{ env.DOCKERFILE_PATH }}
-        platforms: linux/amd64
-        push: true
-        build-args: |
-          NUGET_FEED_URL=${{ secrets.NUGET_FEED_URL }}
-          NUGET_USER=${{ secrets.NUGET_USERNAME }}
-          NUGET_PASS=${{ secrets.NUGET_PASSWORD }}
-        tags: |
-          ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:v1.0.${{ github.run_number }}
-
-  update-gitops:
-    needs: build-and-push
-    runs-on: [self-hosted, arc-pi]
-    
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        repository: ${{ env.GITOPS_REPO }}
-        ref: ${{ env.GITOPS_BRANCH }}
-        token: ${{ secrets.GITOPS_TOKEN }}
-        path: gitops-repo
-    
-    - name: Install PyYAML
-      run: |
-        # Use system Python and install PyYAML
-        python3 --version
-        pip3 install --user PyYAML
-    
-    - name: Update deployment YAML
-      run: |
-        python3 << 'EOF'
-        import yaml
-        
-        yaml_path = f"gitops-repo/${{ env.GITOPS_FILE_PATH }}"
-        new_image = f"${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:v1.0.${{ github.run_number }}"
-        
-        with open(yaml_path, 'r') as file:
-            deployment = yaml.safe_load(file)
-        
-        # Update the image tag
-        if 'spec' in deployment and 'template' in deployment['spec']:
-            deployment['spec']['template']['spec']['containers'][0]['image'] = new_image
-        elif 'image' in deployment:
-            deployment['image'] = new_image
-        else:
-            print("Could not find image field in deployment YAML")
-            exit(1)
-        
-        with open(yaml_path, 'w') as file:
-            yaml.dump(deployment, file, default_flow_style=False)
-        
-        print(f"Updated {yaml_path} with image: {new_image}")
-        EOF
-    
-    - name: Commit and push changes
-      run: |
-        cd gitops-repo
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add ${{ env.GITOPS_FILE_PATH }}
-        git commit -m "Update ${{ env.IMAGE_NAME }} to v1.0.${{ github.run_number }} (commit: ${{ github.sha }})"
-        git push
+  ci:
+    uses: Atriarch-Systems/Atriarch.Actions/.github/workflows/container-ci.yml@v1
+    secrets: inherit
+    with:
+      image_name: uwu-converter
+      gitops_file: uwu-converter/uwu-converter.yaml
+      runs_on: '["self-hosted","Linux","ARM64","arc-pi"]'
+      # The "build" stage is the SDK stage that has the test project restored
+      # and compiled; running `dotnet test` inside it IS the test step, same
+      # as the old workflow's separate `test` job.
+      test_target: build
+      test_command: 'dotnet test "./UwUConverter.Test/UwUConverter.Tests.csproj" --no-restore --verbosity minimal'
+      nuget_build_args: true
+      build_args: |
+        NUGET_FEED_URL=${{ secrets.NUGET_FEED_URL }}
+      # The old workflow never pushed a `:latest` tag, only the versioned one.
+      # Keep that behavior instead of picking up the shared default.
+      tag_latest: false
 
   notify-discord:
-    if: always()  # Run regardless of previous job status
-    needs: [test, build-and-push, update-gitops]
+    if: always()
+    needs: [ci]
     runs-on: [self-hosted, arc-pi]
-    
+
     steps:
     - name: Notify Discord on Success
-      if: needs.test.result == 'success' && needs.build-and-push.result == 'success' && needs.update-gitops.result == 'success'
+      if: needs.ci.result == 'success'
       run: |
         curl -H "Content-Type: application/json" \
              -d '{
                "embeds": [{
-                 "title": "✅ UwU Converter Build Successful",
-                 "description": "Master branch build and deployment completed successfully!",
+                 "title": "✅ UwU Converter CI Successful",
+                 "description": "CI for `${{ github.event_name }}` on `${{ github.ref_name }}` completed successfully!",
                  "color": 3066993,
                  "fields": [
                    {
@@ -165,8 +56,13 @@ jobs:
                      "inline": true
                    },
                    {
+                     "name": "Event",
+                     "value": "${{ github.event_name }}",
+                     "inline": true
+                   },
+                   {
                      "name": "Image Tag",
-                     "value": "${{ secrets.DOCKER_REGISTRY }}/${{ vars.IMAGE_NAME }}:v1.0.${{ github.run_number }}",
+                     "value": "${{ needs.ci.outputs.version_tag }}",
                      "inline": false
                    }
                  ],
@@ -174,15 +70,15 @@ jobs:
                }]
              }' \
              "${{ secrets.DISCORD_BUILD_NOTIFY_WEBHOOK }}"
-    
+
     - name: Notify Discord on Failure
-      if: needs.test.result == 'failure' || needs.build-and-push.result == 'failure' || needs.update-gitops.result == 'failure'
+      if: needs.ci.result == 'failure'
       run: |
         curl -H "Content-Type: application/json" \
              -d '{
                "embeds": [{
-                 "title": "❌ UwU Converter Build Failed",
-                 "description": "Master branch build or deployment failed!",
+                 "title": "❌ UwU Converter CI Failed",
+                 "description": "CI for `${{ github.event_name }}` on `${{ github.ref_name }}` failed!",
                  "color": 15158332,
                  "fields": [
                    {
@@ -196,9 +92,9 @@ jobs:
                      "inline": true
                    },
                    {
-                     "name": "Failed Jobs",
-                     "value": "Test: ${{ needs.test.result }}\nBuild: ${{ needs.build-and-push.result }}\nDeploy: ${{ needs.update-gitops.result }}",
-                     "inline": false
+                     "name": "Event",
+                     "value": "${{ github.event_name }}",
+                     "inline": true
                    },
                    {
                      "name": "Action URL",
