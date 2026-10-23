@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    runs-on: [self-hosted, arc-pi]
+    runs-on: [self-hosted, arc-amd64]
     
     steps:
     - uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
 
   build-and-push:
     needs: test
-    runs-on: [self-hosted, arc-pi]
+    runs-on: [self-hosted, arc-amd64]
     
     steps:
     - uses: actions/checkout@v4
@@ -87,7 +87,7 @@ jobs:
 
   update-gitops:
     needs: build-and-push
-    runs-on: [self-hosted, arc-pi]
+    runs-on: [self-hosted, arc-amd64]
     
     steps:
     - uses: actions/checkout@v4
@@ -141,7 +141,7 @@ jobs:
   notify-discord:
     if: always()  # Run regardless of previous job status
     needs: [test, build-and-push, update-gitops]
-    runs-on: [self-hosted, arc-pi]
+    runs-on: [self-hosted, arc-amd64]
     
     steps:
     - name: Notify Discord on Success
