@@ -42,6 +42,20 @@ RUN dotnet publish "./src/UwUConverter.csproj" -c Release -o out
 # https://hub.docker.com/_/microsoft-dotnet-aspnet/
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
+
+# CVE-2026-84782: upgrade libssl3 and openssl to the current bookworm
+# security build (>= 3.0.22-1~deb12u2). Targeted, unpinned install so the
+# layer tracks the distro's current release instead of rotting; the dpkg
+# check fails the build if the mirror does not supply the required floor.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade libssl3 openssl \
+    && rm -rf /var/lib/apt/lists/* \
+    && for pkg in libssl3 openssl; do \
+         installed=$(dpkg-query -W -f='${Version}' "$pkg") \
+         && dpkg --compare-versions "$installed" ge "3.0.22-1~deb12u2" \
+         || { echo "FATAL: $pkg is $installed, need >= 3.0.22-1~deb12u2" >&2; exit 1; }; \
+       done
+
 COPY --from=build /app/out ./
 RUN groupadd -g 1001 appuser && useradd -u 1001 -g appuser -s /bin/bash -m appuser
 USER appuser
