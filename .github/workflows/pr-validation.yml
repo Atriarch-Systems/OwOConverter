@@ -11,7 +11,7 @@ env:
 
 jobs:
   test:
-    runs-on: [self-hosted, arc-pi]
+    runs-on: [self-hosted, arc-amd64]
     
     steps:
     - uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
 
   build-validation:
     needs: test
-    runs-on: [self-hosted, arc-pi]
+    runs-on: [self-hosted, arc-amd64]
     
     steps:
     - uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
   notify-discord:
     if: always()  # Run regardless of previous job status
     needs: [test, build-validation]
-    runs-on: [self-hosted, arc-pi]
+    runs-on: [self-hosted, arc-amd64]
     
     steps:
     - name: Notify Discord on Success
